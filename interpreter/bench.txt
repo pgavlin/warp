@@ -1,0 +1,35 @@
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/interpreter
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	     411	  89168711 ns/op
+PASS
+ok  	github.com/pgavlin/warp/interpreter	51.944s
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/interpreter
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	     411	  87457425 ns/op
+PASS
+ok  	github.com/pgavlin/warp/interpreter	51.123s
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/interpreter
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	     412	  87511142 ns/op
+PASS
+ok  	github.com/pgavlin/warp/interpreter	51.218s
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/interpreter
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	     409	  87441476 ns/op
+PASS
+ok  	github.com/pgavlin/warp/interpreter	51.608s
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/interpreter
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	     411	  87610466 ns/op
+PASS
+ok  	github.com/pgavlin/warp/interpreter	51.149s

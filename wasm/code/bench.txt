@@ -1,0 +1,35 @@
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/wasm/code
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	   10000	   3420406 ns/op
+PASS
+ok  	github.com/pgavlin/warp/wasm/code	34.846s
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/wasm/code
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	   10000	   3388090 ns/op
+PASS
+ok  	github.com/pgavlin/warp/wasm/code	34.296s
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/wasm/code
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	   10000	   3406883 ns/op
+PASS
+ok  	github.com/pgavlin/warp/wasm/code	34.498s
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/wasm/code
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	   10000	   3377384 ns/op
+PASS
+ok  	github.com/pgavlin/warp/wasm/code	34.185s
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/wasm/code
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	   10000	   3366812 ns/op
+PASS
+ok  	github.com/pgavlin/warp/wasm/code	34.092s

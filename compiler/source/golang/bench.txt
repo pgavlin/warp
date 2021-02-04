@@ -1,0 +1,35 @@
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/compiler/source/golang/test/bench
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	    2928	  10745087 ns/op
+PASS
+ok  	github.com/pgavlin/warp/compiler/source/golang/test/bench	33.922s
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/compiler/source/golang/test/bench
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	    3698	   9803471 ns/op
+PASS
+ok  	github.com/pgavlin/warp/compiler/source/golang/test/bench	38.328s
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/compiler/source/golang/test/bench
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	    3670	   9769693 ns/op
+PASS
+ok  	github.com/pgavlin/warp/compiler/source/golang/test/bench	37.905s
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/compiler/source/golang/test/bench
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	    3660	   9768400 ns/op
+PASS
+ok  	github.com/pgavlin/warp/compiler/source/golang/test/bench	37.796s
+goos: darwin
+goarch: amd64
+pkg: github.com/pgavlin/warp/compiler/source/golang/test/bench
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkFlate-8   	    3688	   9789083 ns/op
+PASS
+ok  	github.com/pgavlin/warp/compiler/source/golang/test/bench	38.148s
