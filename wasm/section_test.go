@@ -40,52 +40,17 @@ func TestSectionCustom(t *testing.T) {
 		}
 
 		// check FunctionNames MarshalWASM func
-		if len(nSec.Types[wasm.NameFunction]) == 0 {
+		if len(nSec.Entries) == 0 {
 			t.Fatalf("%s doesn't have custom FunctionNames section", fname)
 		}
 
-		sub, err := nSec.Decode(wasm.NameFunction)
+		var buf bytes.Buffer
+		err = nSec.MarshalWASM(&buf)
 		if err != nil {
-			t.Fatalf("error NameSection Decode NameFunction %v", err)
+			t.Fatalf("error name Section Marshal %v", err)
 		}
-
-		funcNames, ok := sub.(*wasm.FunctionNames)
-		if !ok {
-			t.Fatal("error NameSubsection type")
+		if !bytes.Equal(buf.Bytes(), nameCustom.Data) {
+			t.Fatal("error Marshal and Unmarshal name Section")
 		}
-
-		buf := new(bytes.Buffer)
-		err = funcNames.MarshalWASM(buf)
-		if err != nil {
-			t.Fatalf("error FunctionNames Marshal %v", err)
-		}
-		if !bytes.Equal(buf.Bytes(), nSec.Types[wasm.NameFunction]) {
-			t.Fatal("error Marshal and Unmarshal FunctionNames")
-		}
-
-		// check LocalNames MarshalWASM func
-		if len(nSec.Types[wasm.NameLocal]) == 0 {
-			t.Fatalf("%s doesn't have custom LocalNames section", fname)
-		}
-
-		sub, err = nSec.Decode(wasm.NameLocal)
-		if err != nil {
-			t.Fatalf("error NameSection Decode NameFunction %v", err)
-		}
-
-		localNames, ok := sub.(*wasm.LocalNames)
-		if !ok {
-			t.Fatal("error NameSubsection type")
-		}
-
-		buf = new(bytes.Buffer)
-		err = localNames.MarshalWASM(buf)
-		if err != nil {
-			t.Fatalf("error LocalNames Marshal %v", err)
-		}
-		if !bytes.Equal(buf.Bytes(), nSec.Types[wasm.NameLocal]) {
-			t.Fatal("error Marshal and Unmarshal LocalNames")
-		}
-
 	})
 }

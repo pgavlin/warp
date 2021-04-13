@@ -1110,6 +1110,7 @@ func (s *LocalNamesSubsection) UnmarshalWASM(r io.Reader) error {
 		}
 		funcs[i] = LocalNames{Index: ind, Names: names}
 	}
+	s.Funcs = funcs
 
 	return nil
 }
