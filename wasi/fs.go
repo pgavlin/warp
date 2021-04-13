@@ -52,6 +52,9 @@ const (
 
 	// The peer of this socket has closed or disconnected.
 	EventHangup = wasiEventrwflagsFdReadwriteHangup
+
+	// ErrnoIO indicates that an I/O error occurred during Poll.
+	ErrnoIO = wasiErrnoIo
 )
 
 type FileStat struct {

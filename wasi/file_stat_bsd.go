@@ -1,4 +1,4 @@
-// +build aix dragonfly linux openbsd solaris
+// +build darwin freebsd netbsd
 
 package wasi
 
@@ -20,8 +20,8 @@ func fileStat(info os.FileInfo) FileStat {
 		Mode:       info.Mode(),
 		LinkCount:  uint64(stat.Nlink),
 		Size:       uint64(info.Size()),
-		AccessTime: time.Unix(stat.Atim.Unix()),
-		ModTime:    time.Unix(stat.Mtim.Unix()),
-		ChangeTime: time.Unix(stat.Ctim.Unix()),
+		AccessTime: time.Unix(stat.Atimespec.Unix()),
+		ModTime:    time.Unix(stat.Mtimespec.Unix()),
+		ChangeTime: time.Unix(stat.Ctimespec.Unix()),
 	}
 }
