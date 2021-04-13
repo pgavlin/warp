@@ -18,8 +18,8 @@ import (
 
 var testPaths = []string{
 	"../wasm/testdata",
-	"../exec/testdata",
-	"../exec/testdata/spec",
+	"../internal/testdata",
+	"../internal/testdata/spec",
 }
 
 func TestAssemble(t *testing.T) {
