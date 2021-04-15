@@ -140,3 +140,63 @@ func (m *Memory) Float64(base, offset uint32) float64 {
 func (m *Memory) PutFloat64(v float64, base, offset uint32) {
 	m.PutUint64(math.Float64bits(v), base, offset)
 }
+
+// ByteAt returns the byte stored at the given offset.
+func (m *Memory) ByteAt(offset uint32) byte {
+	return m.Byte(offset, 0)
+}
+
+// PutByte writes the given byte to the given offset.
+func (m *Memory) PutByteAt(v byte, offset uint32) {
+	m.PutByte(v, offset, 0)
+}
+
+// Uint16 returns the uint16 stored at the given offset.
+func (m *Memory) Uint16At(offset uint32) uint16 {
+	return m.Uint16(offset, 0)
+}
+
+// PutUint16 writes the given uint16 to the given offset.
+func (m *Memory) PutUint16At(v uint16, offset uint32) {
+	m.PutUint16(v, offset, 0)
+}
+
+// Uint32 returns the uint32 stored at the given offset.
+func (m *Memory) Uint32At(offset uint32) uint32 {
+	return m.Uint32(offset, 0)
+}
+
+// PutUint32 writes the given uint32 to the given offset.
+func (m *Memory) PutUint32At(v uint32, offset uint32) {
+	m.PutUint32(v, offset, 0)
+}
+
+// Uint64 returns the uint64 stored at the given offset.
+func (m *Memory) Uint64At(offset uint32) uint64 {
+	return m.Uint64(offset, 0)
+}
+
+// PutUint64 writes the given uint64 to the given offset.
+func (m *Memory) PutUint64At(v uint64, offset uint32) {
+	m.PutUint64(v, offset, 0)
+}
+
+// Float32 returns the float32 stored at the given offset.
+func (m *Memory) Float32At(offset uint32) float32 {
+	return m.Float32(offset, 0)
+}
+
+// PutFloat32 writes the given float32 to the given offset.
+func (m *Memory) PutFloat32At(v float32, offset uint32) {
+	m.PutFloat32(v, offset, 0)
+}
+
+// Float64 returns the float64 stored at the given offset.
+func (m *Memory) Float64At(offset uint32) float64 {
+	return m.Float64(offset, 0)
+}
+
+// PutFloat64 writes the given float64 to the given offset.
+func (m *Memory) PutFloat64At(v float64, offset uint32) {
+	m.PutFloat64(v, offset, 0)
+}

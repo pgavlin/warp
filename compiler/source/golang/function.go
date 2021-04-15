@@ -439,6 +439,26 @@ func (f *functionCompiler) emitBlockOuts(w io.Writer, b *wax.Block, uses wax.Use
 	return f.emitAssignTemps(w, b.OutTemp, uses)
 }
 
+func (f *functionCompiler) load(x *wax.Expression, loadWidth int) string {
+	switch {
+	case x.Instr.Offset() == 0:
+		return fmt.Sprintf("m.mem0.Uint%vAt(uint32(%4U))", loadWidth, x.Uses[0])
+	case isConst0(x.Uses[0]):
+		return fmt.Sprintf("m.mem0.Uint%vAt(%d)", loadWidth, x.Instr.Offset())
+	}
+	return fmt.Sprintf("m.mem0.Uint%v(uint32(%4U), %d)", loadWidth, x.Uses[0], x.Instr.Offset())
+}
+
+func (f *functionCompiler) emitStore(w io.Writer, x *wax.Def, storeWidth int, value string) error {
+	switch {
+	case x.Instr.Offset() == 0:
+		return printf(w, "m.mem0.PutUint%vAt(%s, uint32(%4U))\n", storeWidth, value, x.Uses[0])
+	case isConst0(x.Uses[0]):
+		return printf(w, "m.mem0.PutUint%vAt(%s, %d)\n", storeWidth, value, x.Instr.Offset())
+	}
+	return printf(w, "m.mem0.PutUint%v(%s, uint32(%4U), %d)\n", storeWidth, value, x.Uses[0], x.Instr.Offset())
+}
+
 func (f *functionCompiler) emitDef(w io.Writer, x *wax.Def) error {
 	switch x.Instr.Opcode {
 	case code.OpUnreachable:
@@ -617,46 +637,25 @@ func (f *functionCompiler) emitDef(w io.Writer, x *wax.Def) error {
 		return printf(w, "m.g%d = %u\n", globalidx, x.Uses[0])
 
 	case code.OpI32Store:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "m.mem0.PutUint32At(uint32(%4U), uint32(%4U))\n", x.Uses[1], x.Uses[0])
-		}
-		return printf(w, "m.mem0.PutUint32(uint32(%4U), uint32(%4U), %d)\n", x.Uses[1], x.Uses[0], x.Instr.Offset())
+		return f.emitStore(w, x, 32, fmt.Sprintf("uint32(%4U)", x.Uses[1]))
 	case code.OpI64Store:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "m.mem0.PutUint64At(uint64(%8U), uint32(%4U))\n", x.Uses[1], x.Uses[0])
-		}
-		return printf(w, "m.mem0.PutUint64(uint64(%8U), uint32(%4U), %d)\n", x.Uses[1], x.Uses[0], x.Instr.Offset())
+		return f.emitStore(w, x, 64, fmt.Sprintf("uint64(%8U)", x.Uses[1]))
 	case code.OpF32Store:
-		return printf(w, "m.mem0.PutFloat32(%u, uint32(%4U), %d)\n", x.Uses[1], x.Uses[0], x.Instr.Offset())
+		return f.emitStore(w, x, 32, fmt.Sprintf("math.Float32bits(%u)", x.Uses[1]))
 	case code.OpF64Store:
-		return printf(w, "m.mem0.PutFloat64(%u, uint32(%4U), %d)\n", x.Uses[1], x.Uses[0], x.Instr.Offset())
+		return f.emitStore(w, x, 64, fmt.Sprintf("math.Float64bits(%u)", x.Uses[1]))
 
 	case code.OpI32Store8:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "m.mem0.PutByteAt(byte(%1U), uint32(%4U))\n", x.Uses[1], x.Uses[0])
-		}
-		return printf(w, "m.mem0.PutByte(byte(%1U), uint32(%4U), %d)\n", x.Uses[1], x.Uses[0], x.Instr.Offset())
+		return f.emitStore(w, x, 8, fmt.Sprintf("uint8(%1U)", x.Uses[1]))
 	case code.OpI32Store16:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "m.mem0.PutUint16At(uint16(%2U), uint32(%4U))\n", x.Uses[1], x.Uses[0])
-		}
-		return printf(w, "m.mem0.PutUint16(uint16(%2U), uint32(%4U), %d)\n", x.Uses[1], x.Uses[0], x.Instr.Offset())
+		return f.emitStore(w, x, 16, fmt.Sprintf("uint16(%2U)", x.Uses[1]))
 
 	case code.OpI64Store8:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "m.mem0.PutByteAt(byte(%1U), uint32(%4U))\n", x.Uses[1], x.Uses[0])
-		}
-		return printf(w, "m.mem0.PutByte(byte(%1U), uint32(%4U), %d)\n", x.Uses[1], x.Uses[0], x.Instr.Offset())
+		return f.emitStore(w, x, 8, fmt.Sprintf("uint8(%1U)", x.Uses[1]))
 	case code.OpI64Store16:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "m.mem0.PutUint16At(uint16(%2U), uint32(%4U))\n", x.Uses[1], x.Uses[0])
-		}
-		return printf(w, "m.mem0.PutUint16(uint16(%2U), uint32(%4U), %d)\n", x.Uses[1], x.Uses[0], x.Instr.Offset())
+		return f.emitStore(w, x, 16, fmt.Sprintf("uint16(%2U)", x.Uses[1]))
 	case code.OpI64Store32:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "m.mem0.PutUint32At(uint32(%4U), uint32(%4U))\n", x.Uses[1], x.Uses[0])
-		}
-		return printf(w, "m.mem0.PutUint32(uint32(%4U), uint32(%4U), %d)\n", x.Uses[1], x.Uses[0], x.Instr.Offset())
+		return f.emitStore(w, x, 32, fmt.Sprintf("uint32(%4U)", x.Uses[1]))
 
 	case code.OpMemoryGrow:
 		return printf(w, "var t%d int32\nif sz, err := m.mem0.Grow(uint32(%4U)); err != nil {\nt%d = -1\n} else {\nt%d = int32(sz)\n}\n", x.Temp, x.Uses[0], x.Temp, x.Temp)
@@ -697,77 +696,35 @@ func (f *functionCompiler) emitExpression(w io.Writer, x *wax.Expression, parent
 		return printf(w, "m.g%d", globalidx)
 
 	case code.OpI32Load:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "int32(m.mem0.Uint32At(uint32(%4U)))", x.Uses[0])
-		}
-		return printf(w, "int32(m.mem0.Uint32(uint32(%4U), %d))", x.Uses[0], x.Instr.Offset())
+		return printf(w, "int32(%s)", f.load(x, 32))
 	case code.OpI64Load:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "int64(m.mem0.Uint64At(uint32(%4U)))", x.Uses[0])
-		}
-		return printf(w, "int64(m.mem0.Uint64(uint32(%4U), %d))", x.Uses[0], x.Instr.Offset())
+		return printf(w, "int64(%s)", f.load(x, 64))
 	case code.OpF32Load:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "m.mem0.Float32At(uint32(%4U))", x.Uses[0])
-		}
-		return printf(w, "m.mem0.Float32(uint32(%4U), %d)", x.Uses[0], x.Instr.Offset())
+		return printf(w, "math.Float32frombits(%s)", f.load(x, 32))
 	case code.OpF64Load:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "m.mem0.Float64At(uint32(%4U))", x.Uses[0])
-		}
-		return printf(w, "m.mem0.Float64(uint32(%4U), %d)", x.Uses[0], x.Instr.Offset())
+		return printf(w, "math.Float64frombits(%s)", f.load(x, 64))
 
 	case code.OpI32Load8S:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "int32(int8(m.mem0.ByteAt(uint32(%4U))))", x.Uses[0])
-		}
-		return printf(w, "int32(int8(m.mem0.Byte(uint32(%4U), %d)))", x.Uses[0], x.Instr.Offset())
+		return printf(w, "int32(int8(%s))", f.load(x, 8))
 	case code.OpI32Load8U:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "int32(m.mem0.ByteAt(uint32(%4U)))", x.Uses[0])
-		}
-		return printf(w, "int32(m.mem0.Byte(uint32(%4U), %d))", x.Uses[0], x.Instr.Offset())
+		return printf(w, "int32(%s)", f.load(x, 8))
 	case code.OpI32Load16S:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "int32(int16(m.mem0.Uint16At(uint32(%4U))))", x.Uses[0])
-		}
-		return printf(w, "int32(int16(m.mem0.Uint16(uint32(%4U), %d)))", x.Uses[0], x.Instr.Offset())
+		return printf(w, "int32(int16(%s))", f.load(x, 16))
 	case code.OpI32Load16U:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "int32(m.mem0.Uint16At(uint32(%4U)))", x.Uses[0])
-		}
-		return printf(w, "int32(m.mem0.Uint16(uint32(%4U), %d))", x.Uses[0], x.Instr.Offset())
+		return printf(w, "int32(%s)", f.load(x, 16))
 
 	case code.OpI64Load8S:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "int64(int8(m.mem0.ByteAt(uint32(%4U))))", x.Uses[0])
-		}
-		return printf(w, "int64(int8(m.mem0.Byte(uint32(%4U), %d)))", x.Uses[0], x.Instr.Offset())
+		return printf(w, "int64(int8(%s))", f.load(x, 8))
 	case code.OpI64Load8U:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "int64(m.mem0.ByteAt(uint32(%4U)))", x.Uses[0])
-		}
-		return printf(w, "int64(m.mem0.Byte(uint32(%4U), %d))", x.Uses[0], x.Instr.Offset())
+		return printf(w, "int64(%s)", f.load(x, 8))
 	case code.OpI64Load16S:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "int64(int16(m.mem0.Uint16At(uint32(%4U))))", x.Uses[0])
-		}
-		return printf(w, "int64(int16(m.mem0.Uint16(uint32(%4U), %d)))", x.Uses[0], x.Instr.Offset())
+		return printf(w, "int64(int16(%s))", f.load(x, 16))
 	case code.OpI64Load16U:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "int64(m.mem0.Uint16At(uint32(%4U)))", x.Uses[0])
-		}
-		return printf(w, "int64(m.mem0.Uint16(uint32(%4U), %d))", x.Uses[0], x.Instr.Offset())
+		return printf(w, "int64(%s)", f.load(x, 16))
 	case code.OpI64Load32S:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "int64(int32(m.mem0.Uint32At(uint32(%4U))))", x.Uses[0])
-		}
-		return printf(w, "int64(int32(m.mem0.Uint32(uint32(%4U), %d)))", x.Uses[0], x.Instr.Offset())
+		return printf(w, "int64(int32(%s))", f.load(x, 32))
 	case code.OpI64Load32U:
-		if x.Instr.Offset() == 0 {
-			return printf(w, "int64(m.mem0.Uint32At(uint32(%4U)))", x.Uses[0])
-		}
-		return printf(w, "int64(m.mem0.Uint32(uint32(%4U), %d))", x.Uses[0], x.Instr.Offset())
+		return printf(w, "int64(%s)", f.load(x, 32))
 
 	case code.OpMemorySize:
 		return printf(w, "int32(m.mem0.Size())")
@@ -1135,6 +1092,24 @@ func isConst(u *wax.Use) bool {
 	switch u.X.Instr.Opcode {
 	case code.OpI32Const, code.OpI64Const, code.OpF32Const, code.OpF64Const:
 		return true
+	default:
+		return false
+	}
+}
+
+func isConst0(u *wax.Use) bool {
+	if u.IsTemp() {
+		return false
+	}
+	switch u.X.Instr.Opcode {
+	case code.OpI32Const:
+		return u.X.Instr.I32() == 0
+	case code.OpI64Const:
+		return u.X.Instr.I64() == 0
+	case code.OpF32Const:
+		return u.X.Instr.F32() == 0
+	case code.OpF64Const:
+		return u.X.Instr.F64() == 0
 	default:
 		return false
 	}

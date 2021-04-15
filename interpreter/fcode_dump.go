@@ -56,11 +56,18 @@ func (d *dumper) dumpOp(ip int, fi *finstruction, op string, ndef int) {
 	fmt.Fprintf(d.w, "%s", op)
 }
 
-func (d *dumper) dumpBranch(ip int, fi *finstruction, op string, isBr bool) {
+func (d *dumper) dumpBranch(ip int, fi *finstruction, op string, isBr, isCmp bool) {
 	d.dumpOp(ip, fi, op, 0)
 
 	if !isBr {
 		fmt.Fprintf(d.w, " v%v,", fi.src1)
+	}
+	if isCmp {
+		if fi.flags&ifSrc2Frame != 0 {
+			fmt.Fprintf(d.w, " v%v,", uint32(fi.src2))
+		} else {
+			fmt.Fprintf(d.w, " 0x%016x,", fi.src2)
+		}
 	}
 	fmt.Fprintf(d.w, " l%v", fi.Labelidx())
 	d.dumpTuple(d.fn.numLocals+fi.StackHeight(), d.fn.labels[fi.Labelidx()].arity)
@@ -144,17 +151,17 @@ func (d *dumper) dumpInstruction(ip int, fi *finstruction) {
 	case fopElse:
 		d.dumpOp(ip, fi, "else", 0)
 	case fopBr:
-		d.dumpBranch(ip, fi, "br", true)
+		d.dumpBranch(ip, fi, "br", true, false)
 	case fopBrIf:
-		d.dumpBranch(ip, fi, "br_if", false)
+		d.dumpBranch(ip, fi, "br_if", false, false)
 	case fopBrTable:
-		d.dumpBranch(ip, fi, "br_table", false)
+		d.dumpBranch(ip, fi, "br_table", false, false)
 	case fopBrL:
-		d.dumpBranch(ip, fi, "br.l", true)
+		d.dumpBranch(ip, fi, "br.l", true, false)
 	case fopBrIfL:
-		d.dumpBranch(ip, fi, "br_if.l", false)
+		d.dumpBranch(ip, fi, "br_if.l", false, false)
 	case fopBrTableL:
-		d.dumpBranch(ip, fi, "br_table.l", false)
+		d.dumpBranch(ip, fi, "br_table.l", false, false)
 	case fopReturn:
 		d.dumpOp(ip, fi, "return", 0)
 		d.dumpTuple(d.fn.numLocals+fi.StackHeight(), len(d.fn.signature.ReturnTypes))
@@ -507,76 +514,76 @@ func (d *dumper) dumpInstruction(ip int, fi *finstruction) {
 		d.dumpUnOp(ip, fi, "i64.trunc_sat_f64_u")
 
 	case fopBrIfI32Eqz:
-		d.dumpBranch(ip, fi, "br_if.i32.eqz", false)
+		d.dumpBranch(ip, fi, "br_if.i32.eqz", false, true)
 	case fopBrIfI32Eq:
-		d.dumpBranch(ip, fi, "br_if.i32.eq", false)
+		d.dumpBranch(ip, fi, "br_if.i32.eq", false, true)
 	case fopBrIfI32Ne:
-		d.dumpBranch(ip, fi, "br_if.i32.ne", false)
+		d.dumpBranch(ip, fi, "br_if.i32.ne", false, true)
 	case fopBrIfI32LtS:
-		d.dumpBranch(ip, fi, "br_if.i32.lt_s", false)
+		d.dumpBranch(ip, fi, "br_if.i32.lt_s", false, true)
 	case fopBrIfI32LtU:
-		d.dumpBranch(ip, fi, "br_if.i32.lt_u", false)
+		d.dumpBranch(ip, fi, "br_if.i32.lt_u", false, true)
 	case fopBrIfI32GtS:
-		d.dumpBranch(ip, fi, "br_if.i32.gt_s", false)
+		d.dumpBranch(ip, fi, "br_if.i32.gt_s", false, true)
 	case fopBrIfI32GtU:
-		d.dumpBranch(ip, fi, "br_if.i32.gt_u", false)
+		d.dumpBranch(ip, fi, "br_if.i32.gt_u", false, true)
 	case fopBrIfI32LeS:
-		d.dumpBranch(ip, fi, "br_if.i32.le_s", false)
+		d.dumpBranch(ip, fi, "br_if.i32.le_s", false, true)
 	case fopBrIfI32LeU:
-		d.dumpBranch(ip, fi, "br_if.i32.le_u", false)
+		d.dumpBranch(ip, fi, "br_if.i32.le_u", false, true)
 	case fopBrIfI32GeS:
-		d.dumpBranch(ip, fi, "br_if.i32.ge_s", false)
+		d.dumpBranch(ip, fi, "br_if.i32.ge_s", false, true)
 	case fopBrIfI32GeU:
-		d.dumpBranch(ip, fi, "br_if.i32.ge_u", false)
+		d.dumpBranch(ip, fi, "br_if.i32.ge_u", false, true)
 
 	case fopBrIfI64Eqz:
-		d.dumpBranch(ip, fi, "br_if.i64.eqz", false)
+		d.dumpBranch(ip, fi, "br_if.i64.eqz", false, true)
 	case fopBrIfI64Eq:
-		d.dumpBranch(ip, fi, "br_if.i64.eq", false)
+		d.dumpBranch(ip, fi, "br_if.i64.eq", false, true)
 	case fopBrIfI64Ne:
-		d.dumpBranch(ip, fi, "br_if.i64.ne", false)
+		d.dumpBranch(ip, fi, "br_if.i64.ne", false, true)
 	case fopBrIfI64LtS:
-		d.dumpBranch(ip, fi, "br_if.i64.lt_s", false)
+		d.dumpBranch(ip, fi, "br_if.i64.lt_s", false, true)
 	case fopBrIfI64LtU:
-		d.dumpBranch(ip, fi, "br_if.i64.lt_u", false)
+		d.dumpBranch(ip, fi, "br_if.i64.lt_u", false, true)
 	case fopBrIfI64GtS:
-		d.dumpBranch(ip, fi, "br_if.i64.gt_s", false)
+		d.dumpBranch(ip, fi, "br_if.i64.gt_s", false, true)
 	case fopBrIfI64GtU:
-		d.dumpBranch(ip, fi, "br_if.i64.gt_u", false)
+		d.dumpBranch(ip, fi, "br_if.i64.gt_u", false, true)
 	case fopBrIfI64LeS:
-		d.dumpBranch(ip, fi, "br_if.i64.le_s", false)
+		d.dumpBranch(ip, fi, "br_if.i64.le_s", false, true)
 	case fopBrIfI64LeU:
-		d.dumpBranch(ip, fi, "br_if.i64.le_u", false)
+		d.dumpBranch(ip, fi, "br_if.i64.le_u", false, true)
 	case fopBrIfI64GeS:
-		d.dumpBranch(ip, fi, "br_if.i64.ge_s", false)
+		d.dumpBranch(ip, fi, "br_if.i64.ge_s", false, true)
 	case fopBrIfI64GeU:
-		d.dumpBranch(ip, fi, "br_if.i64.ge_u", false)
+		d.dumpBranch(ip, fi, "br_if.i64.ge_u", false, true)
 
 	case fopBrIfF32Eq:
-		d.dumpBranch(ip, fi, "br_if.f32.eq", false)
+		d.dumpBranch(ip, fi, "br_if.f32.eq", false, true)
 	case fopBrIfF32Ne:
-		d.dumpBranch(ip, fi, "br_if.f32.ne", false)
+		d.dumpBranch(ip, fi, "br_if.f32.ne", false, true)
 	case fopBrIfF32Lt:
-		d.dumpBranch(ip, fi, "br_if.f32.lt", false)
+		d.dumpBranch(ip, fi, "br_if.f32.lt", false, true)
 	case fopBrIfF32Gt:
-		d.dumpBranch(ip, fi, "br_if.f32.gt", false)
+		d.dumpBranch(ip, fi, "br_if.f32.gt", false, true)
 	case fopBrIfF32Le:
-		d.dumpBranch(ip, fi, "br_if.f32.le", false)
+		d.dumpBranch(ip, fi, "br_if.f32.le", false, true)
 	case fopBrIfF32Ge:
-		d.dumpBranch(ip, fi, "br_if.f32.ge", false)
+		d.dumpBranch(ip, fi, "br_if.f32.ge", false, true)
 
 	case fopBrIfF64Eq:
-		d.dumpBranch(ip, fi, "br_if.f64.eq", false)
+		d.dumpBranch(ip, fi, "br_if.f64.eq", false, true)
 	case fopBrIfF64Ne:
-		d.dumpBranch(ip, fi, "br_if.f64.ne", false)
+		d.dumpBranch(ip, fi, "br_if.f64.ne", false, true)
 	case fopBrIfF64Lt:
-		d.dumpBranch(ip, fi, "br_if.f64.lt", false)
+		d.dumpBranch(ip, fi, "br_if.f64.lt", false, true)
 	case fopBrIfF64Gt:
-		d.dumpBranch(ip, fi, "br_if.f64.gt", false)
+		d.dumpBranch(ip, fi, "br_if.f64.gt", false, true)
 	case fopBrIfF64Le:
-		d.dumpBranch(ip, fi, "br_if.f64.le", false)
+		d.dumpBranch(ip, fi, "br_if.f64.le", false, true)
 	case fopBrIfF64Ge:
-		d.dumpBranch(ip, fi, "br_if.f64.ge", false)
+		d.dumpBranch(ip, fi, "br_if.f64.ge", false, true)
 	}
 	fmt.Fprintf(d.w, "\n")
 }
@@ -598,6 +605,6 @@ func (d *dumper) dumpFcode(body []finstruction) {
 }
 
 func dumpFinstruction(fn *function, fi *finstruction) {
-	d := dumper{fn: fn}
+	d := dumper{w: os.Stderr, fn: fn}
 	d.dumpInstruction(0, fi)
 }

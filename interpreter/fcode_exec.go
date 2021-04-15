@@ -34,9 +34,10 @@ func (f *frame) runFCode(fn *function) {
 	labels := fn.labels
 	switches := fn.switches
 	body := fn.fcode
+	frameSize := fn.numLocals + fn.metrics.MaxStackDepth
 
 	// establish the frame
-	frame := lframe(f.locals[:fn.numLocals+fn.metrics.MaxStackDepth])
+	frame := lframe(f.locals[:frameSize])
 
 	ip := 0
 	for {
@@ -116,6 +117,9 @@ func (f *frame) runFCode(fn *function) {
 			} else {
 				f.invokeDirect(&f.module.functions[funcidx-uint32(len(f.module.importedFunctions))])
 			}
+
+			frame = lframe(f.locals[:frameSize])
+
 		case fopCallIndirect:
 			table := f.module.table0.Entries()
 
@@ -137,6 +141,8 @@ func (f *frame) runFCode(fn *function) {
 
 			f.stack = f.stack[:instr.StackHeight()]
 			f.invoke(function)
+
+			frame = lframe(f.locals[:frameSize])
 
 		case fopSelect:
 			if frame.bool(instr.src1) {
@@ -217,105 +223,105 @@ func (f *frame) runFCode(fn *function) {
 		case fopI32Eqz:
 			frame.setBool(int32(frame[instr.src1]) == 0, instr.dest)
 		case fopI32Eq:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame.setBool(v1 == v2, instr.dest)
 		case fopI32Ne:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame.setBool(v1 != v2, instr.dest)
 		case fopI32LtS:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame.setBool(v1 < v2, instr.dest)
 		case fopI32LtU:
-			v2, v1 := uint32(frame[instr.Src2()]), uint32(frame[instr.src1])
+			v2, v1 := uint32(frame[instr.src2]), uint32(frame[instr.src1])
 			frame.setBool(v1 < v2, instr.dest)
 		case fopI32GtS:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame.setBool(v1 > v2, instr.dest)
 		case fopI32GtU:
-			v2, v1 := uint32(frame[instr.Src2()]), uint32(frame[instr.src1])
+			v2, v1 := uint32(frame[instr.src2]), uint32(frame[instr.src1])
 			frame.setBool(v1 > v2, instr.dest)
 		case fopI32LeS:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame.setBool(v1 <= v2, instr.dest)
 		case fopI32LeU:
-			v2, v1 := uint32(frame[instr.Src2()]), uint32(frame[instr.src1])
+			v2, v1 := uint32(frame[instr.src2]), uint32(frame[instr.src1])
 			frame.setBool(v1 <= v2, instr.dest)
 		case fopI32GeS:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame.setBool(v1 >= v2, instr.dest)
 		case fopI32GeU:
-			v2, v1 := uint32(frame[instr.Src2()]), uint32(frame[instr.src1])
+			v2, v1 := uint32(frame[instr.src2]), uint32(frame[instr.src1])
 			frame.setBool(v1 >= v2, instr.dest)
 
 		case fopI64Eqz:
 			frame.setBool(int64(frame[instr.src1]) == 0, instr.dest)
 		case fopI64Eq:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame.setBool(v1 == v2, instr.dest)
 		case fopI64Ne:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame.setBool(v1 != v2, instr.dest)
 		case fopI64LtS:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame.setBool(v1 < v2, instr.dest)
 		case fopI64LtU:
-			v2, v1 := frame[instr.Src2()], frame[instr.src1]
+			v2, v1 := frame[instr.src2], frame[instr.src1]
 			frame.setBool(v1 < v2, instr.dest)
 		case fopI64GtS:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame.setBool(v1 > v2, instr.dest)
 		case fopI64GtU:
-			v2, v1 := frame[instr.Src2()], frame[instr.src1]
+			v2, v1 := frame[instr.src2], frame[instr.src1]
 			frame.setBool(v1 > v2, instr.dest)
 		case fopI64LeS:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame.setBool(v1 <= v2, instr.dest)
 		case fopI64LeU:
-			v2, v1 := frame[instr.Src2()], frame[instr.src1]
+			v2, v1 := frame[instr.src2], frame[instr.src1]
 			frame.setBool(v1 <= v2, instr.dest)
 		case fopI64GeS:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame.setBool(v1 >= v2, instr.dest)
 		case fopI64GeU:
-			v2, v1 := frame[instr.Src2()], frame[instr.src1]
+			v2, v1 := frame[instr.src2], frame[instr.src1]
 			frame.setBool(v1 >= v2, instr.dest)
 
 		case fopF32Eq:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			frame.setBool(v1 == v2, instr.dest)
 		case fopF32Ne:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			frame.setBool(v1 != v2, instr.dest)
 		case fopF32Lt:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			frame.setBool(v1 < v2, instr.dest)
 		case fopF32Gt:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			frame.setBool(v1 > v2, instr.dest)
 		case fopF32Le:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			frame.setBool(v1 <= v2, instr.dest)
 		case fopF32Ge:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			frame.setBool(v1 >= v2, instr.dest)
 
 		case fopF64Eq:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			frame.setBool(v1 == v2, instr.dest)
 		case fopF64Ne:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			frame.setBool(v1 != v2, instr.dest)
 		case fopF64Lt:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			frame.setBool(v1 < v2, instr.dest)
 		case fopF64Gt:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			frame.setBool(v1 > v2, instr.dest)
 		case fopF64Le:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			frame.setBool(v1 <= v2, instr.dest)
 		case fopF64Ge:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			frame.setBool(v1 >= v2, instr.dest)
 
 		case fopI32Clz:
@@ -325,49 +331,49 @@ func (f *frame) runFCode(fn *function) {
 		case fopI32Popcnt:
 			frame[instr.dest] = uint64(bits.OnesCount32(uint32(frame[instr.src1])))
 		case fopI32Add:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 + v2)
 		case fopI32Sub:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 - v2)
 		case fopI32Mul:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 * v2)
 		case fopI32DivS:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame[instr.dest] = uint64(exec.I32DivS(v1, v2))
 		case fopI32DivU:
-			v2, v1 := uint32(frame[instr.Src2()]), uint32(frame[instr.src1])
+			v2, v1 := uint32(frame[instr.src2]), uint32(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 / v2)
 		case fopI32RemS:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 % v2)
 		case fopI32RemU:
-			v2, v1 := uint32(frame[instr.Src2()]), uint32(frame[instr.src1])
+			v2, v1 := uint32(frame[instr.src2]), uint32(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 % v2)
 		case fopI32And:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 & v2)
 		case fopI32Or:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 | v2)
 		case fopI32Xor:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 ^ v2)
 		case fopI32Shl:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 << (v2 & 31))
 		case fopI32ShrS:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 >> (v2 & 31))
 		case fopI32ShrU:
-			v2, v1 := uint32(frame[instr.Src2()]), uint32(frame[instr.src1])
+			v2, v1 := uint32(frame[instr.src2]), uint32(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 >> (v2 & 31))
 		case fopI32Rotl:
-			v2, v1 := int(frame[instr.Src2()]), uint32(frame[instr.src1])
+			v2, v1 := int(frame[instr.src2]), uint32(frame[instr.src1])
 			frame[instr.dest] = uint64(bits.RotateLeft32(v1, v2))
 		case fopI32Rotr:
-			v2, v1 := int(frame[instr.Src2()]), uint32(frame[instr.src1])
+			v2, v1 := int(frame[instr.src2]), uint32(frame[instr.src1])
 			frame[instr.dest] = uint64(bits.RotateLeft32(v1, -v2))
 
 		case fopI64Clz:
@@ -377,49 +383,49 @@ func (f *frame) runFCode(fn *function) {
 		case fopI64Popcnt:
 			frame[instr.dest] = uint64(bits.OnesCount64(uint64(frame[instr.src1])))
 		case fopI64Add:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 + v2)
 		case fopI64Sub:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 - v2)
 		case fopI64Mul:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 * v2)
 		case fopI64DivS:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame[instr.dest] = uint64(exec.I64DivS(v1, v2))
 		case fopI64DivU:
-			v2, v1 := frame[instr.Src2()], frame[instr.src1]
+			v2, v1 := frame[instr.src2], frame[instr.src1]
 			frame[instr.dest] = uint64(v1 / v2)
 		case fopI64RemS:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 % v2)
 		case fopI64RemU:
-			v2, v1 := frame[instr.Src2()], frame[instr.src1]
+			v2, v1 := frame[instr.src2], frame[instr.src1]
 			frame[instr.dest] = uint64(v1 % v2)
 		case fopI64And:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 & v2)
 		case fopI64Or:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 | v2)
 		case fopI64Xor:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 ^ v2)
 		case fopI64Shl:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 << (v2 & 63))
 		case fopI64ShrS:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			frame[instr.dest] = uint64(v1 >> (v2 & 63))
 		case fopI64ShrU:
-			v2, v1 := frame[instr.Src2()], frame[instr.src1]
+			v2, v1 := frame[instr.src2], frame[instr.src1]
 			frame[instr.dest] = uint64(v1 >> (v2 & 63))
 		case fopI64Rotl:
-			v2, v1 := int(frame[instr.Src2()]), uint64(frame[instr.src1])
+			v2, v1 := int(frame[instr.src2]), uint64(frame[instr.src1])
 			frame[instr.dest] = uint64(bits.RotateLeft64(v1, v2))
 		case fopI64Rotr:
-			v2, v1 := int(frame[instr.Src2()]), uint64(frame[instr.src1])
+			v2, v1 := int(frame[instr.src2]), uint64(frame[instr.src1])
 			frame[instr.dest] = uint64(bits.RotateLeft64(v1, -v2))
 
 		case fopF32Abs:
@@ -437,25 +443,25 @@ func (f *frame) runFCode(fn *function) {
 		case fopF32Sqrt:
 			frame[instr.dest] = uint64(math.Float32bits(float32(math.Sqrt(float64(math.Float32frombits(uint32(frame[instr.src1])))))))
 		case fopF32Add:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			frame[instr.dest] = uint64(math.Float32bits(v1 + v2))
 		case fopF32Sub:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			frame[instr.dest] = uint64(math.Float32bits(v1 - v2))
 		case fopF32Mul:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			frame[instr.dest] = uint64(math.Float32bits(v1 * v2))
 		case fopF32Div:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			frame[instr.dest] = uint64(math.Float32bits(v1 / v2))
 		case fopF32Min:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			frame[instr.dest] = uint64(math.Float32bits(float32(exec.Fmin(float64(v1), float64(v2)))))
 		case fopF32Max:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			frame[instr.dest] = uint64(math.Float32bits(float32(exec.Fmax(float64(v1), float64(v2)))))
 		case fopF32Copysign:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			frame[instr.dest] = uint64(math.Float32bits(float32(math.Copysign(float64(v1), float64(v2)))))
 
 		case fopF64Abs:
@@ -473,25 +479,25 @@ func (f *frame) runFCode(fn *function) {
 		case fopF64Sqrt:
 			frame[instr.dest] = uint64(math.Float64bits(math.Sqrt(math.Float64frombits(frame[instr.src1]))))
 		case fopF64Add:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			frame[instr.dest] = uint64(math.Float64bits(v1 + v2))
 		case fopF64Sub:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			frame[instr.dest] = uint64(math.Float64bits(v1 - v2))
 		case fopF64Mul:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			frame[instr.dest] = uint64(math.Float64bits(v1 * v2))
 		case fopF64Div:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			frame[instr.dest] = uint64(math.Float64bits(v1 / v2))
 		case fopF64Min:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			frame[instr.dest] = uint64(math.Float64bits(exec.Fmin(v1, v2)))
 		case fopF64Max:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			frame[instr.dest] = uint64(math.Float64bits(exec.Fmax(v1, v2)))
 		case fopF64Copysign:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			frame[instr.dest] = uint64(math.Float64bits(math.Copysign(v1, v2)))
 
 		case fopI32WrapI64:
@@ -577,61 +583,61 @@ func (f *frame) runFCode(fn *function) {
 				continue
 			}
 		case fopBrIfI32Eq:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			if v1 == v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI32Ne:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			if v1 != v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI32LtS:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			if v1 < v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI32LtU:
-			v2, v1 := uint32(frame[instr.Src2()]), uint32(frame[instr.src1])
+			v2, v1 := uint32(frame[instr.src2]), uint32(frame[instr.src1])
 			if v1 < v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI32GtS:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			if v1 > v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI32GtU:
-			v2, v1 := uint32(frame[instr.Src2()]), uint32(frame[instr.src1])
+			v2, v1 := uint32(frame[instr.src2]), uint32(frame[instr.src1])
 			if v1 > v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI32LeS:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			if v1 <= v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI32LeU:
-			v2, v1 := uint32(frame[instr.Src2()]), uint32(frame[instr.src1])
+			v2, v1 := uint32(frame[instr.src2]), uint32(frame[instr.src1])
 			if v1 <= v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI32GeS:
-			v2, v1 := int32(frame[instr.Src2()]), int32(frame[instr.src1])
+			v2, v1 := int32(frame[instr.src2]), int32(frame[instr.src1])
 			if v1 >= v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI32GeU:
-			v2, v1 := uint32(frame[instr.Src2()]), uint32(frame[instr.src1])
+			v2, v1 := uint32(frame[instr.src2]), uint32(frame[instr.src1])
 			if v1 >= v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
@@ -643,139 +649,156 @@ func (f *frame) runFCode(fn *function) {
 				continue
 			}
 		case fopBrIfI64Eq:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			if v1 == v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI64Ne:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			if v1 != v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI64LtS:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			if v1 < v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI64LtU:
-			v2, v1 := frame[instr.Src2()], frame[instr.src1]
+			v2, v1 := frame[instr.src2], frame[instr.src1]
 			if v1 < v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI64GtS:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			if v1 > v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI64GtU:
-			v2, v1 := frame[instr.Src2()], frame[instr.src1]
+			v2, v1 := frame[instr.src2], frame[instr.src1]
 			if v1 > v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI64LeS:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			if v1 <= v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI64LeU:
-			v2, v1 := frame[instr.Src2()], frame[instr.src1]
+			v2, v1 := frame[instr.src2], frame[instr.src1]
 			if v1 <= v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI64GeS:
-			v2, v1 := int64(frame[instr.Src2()]), int64(frame[instr.src1])
+			v2, v1 := int64(frame[instr.src2]), int64(frame[instr.src1])
 			if v1 >= v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfI64GeU:
-			v2, v1 := frame[instr.Src2()], frame[instr.src1]
+			v2, v1 := frame[instr.src2], frame[instr.src1]
 			if v1 >= v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 
 		case fopBrIfF32Eq:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			if v1 == v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfF32Ne:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			if v1 != v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfF32Lt:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			if v1 < v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfF32Gt:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			if v1 > v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfF32Le:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			if v1 <= v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfF32Ge:
-			v2, v1 := math.Float32frombits(uint32(frame[instr.Src2()])), math.Float32frombits(uint32(frame[instr.src1]))
+			v2, v1 := math.Float32frombits(uint32(frame[instr.src2])), math.Float32frombits(uint32(frame[instr.src1]))
 			if v1 >= v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 
 		case fopBrIfF64Eq:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			if v1 == v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfF64Ne:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			if v1 != v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfF64Lt:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			if v1 < v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfF64Gt:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			if v1 > v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfF64Le:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			if v1 <= v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
 		case fopBrIfF64Ge:
-			v2, v1 := math.Float64frombits(frame[instr.Src2()]), math.Float64frombits(frame[instr.src1])
+			v2, v1 := math.Float64frombits(frame[instr.src2]), math.Float64frombits(frame[instr.src1])
 			if v1 >= v2 {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
+
+		case fopI32StoreZ, fopF32StoreZ:
+			f.module.mem0.PutUint32(0, uint32(frame[instr.dest]), instr.Offset())
+		case fopI64StoreZ, fopF64StoreZ:
+			f.module.mem0.PutUint64(0, uint32(frame[instr.dest]), instr.Offset())
+
+		case fopI32Store8Z:
+			f.module.mem0.PutByte(0, uint32(frame[instr.dest]), instr.Offset())
+		case fopI32Store16Z:
+			f.module.mem0.PutUint16(0, uint32(frame[instr.dest]), instr.Offset())
+
+		case fopI64Store8Z:
+			f.module.mem0.PutByte(0, uint32(frame[instr.dest]), instr.Offset())
+		case fopI64Store16Z:
+			f.module.mem0.PutUint16(0, uint32(frame[instr.dest]), instr.Offset())
+		case fopI64Store32Z:
+			f.module.mem0.PutUint32(0, uint32(frame[instr.dest]), instr.Offset())
 
 		case fopLocalSetI:
 			frame[instr.dest] = instr.src2
@@ -1268,6 +1291,23 @@ func (f *frame) runFCode(fn *function) {
 				ip = labels[instr.Labelidx()].Continuation()
 				continue
 			}
+
+		case fopI32StoreZI, fopF32StoreZI:
+			f.module.mem0.PutUint32At(0, uint32(frame[instr.dest]))
+		case fopI64StoreZI, fopF64StoreZI:
+			f.module.mem0.PutUint64At(0, uint32(frame[instr.dest]))
+
+		case fopI32Store8ZI:
+			f.module.mem0.PutByteAt(0, uint32(frame[instr.dest]))
+		case fopI32Store16ZI:
+			f.module.mem0.PutUint16At(0, uint32(frame[instr.dest]))
+
+		case fopI64Store8ZI:
+			f.module.mem0.PutByteAt(0, uint32(frame[instr.dest]))
+		case fopI64Store16ZI:
+			f.module.mem0.PutUint16At(0, uint32(frame[instr.dest]))
+		case fopI64Store32ZI:
+			f.module.mem0.PutUint32At(0, uint32(frame[instr.dest]))
 		}
 
 		ip++

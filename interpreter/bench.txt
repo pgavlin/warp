@@ -2,39 +2,39 @@ goos: darwin
 goarch: amd64
 pkg: github.com/pgavlin/warp/interpreter
 cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
-BenchmarkFlate-8     	     386	  92750300 ns/op
-BenchmarkFlateGo-8   	     154	 229249274 ns/op
+BenchmarkFlate-8     	     406	  86419663 ns/op
+BenchmarkFlateGo-8   	     171	 208060643 ns/op
 PASS
-ok  	github.com/pgavlin/warp/interpreter	113.541s
+ok  	github.com/pgavlin/warp/interpreter	109.968s
 goos: darwin
 goarch: amd64
 pkg: github.com/pgavlin/warp/interpreter
 cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
-BenchmarkFlate-8     	     387	  92530918 ns/op
-BenchmarkFlateGo-8   	     156	 226718689 ns/op
+BenchmarkFlate-8     	     410	  86529419 ns/op
+BenchmarkFlateGo-8   	     172	 209524023 ns/op
 PASS
-ok  	github.com/pgavlin/warp/interpreter	113.415s
+ok  	github.com/pgavlin/warp/interpreter	109.889s
 goos: darwin
 goarch: amd64
 pkg: github.com/pgavlin/warp/interpreter
 cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
-BenchmarkFlate-8     	     392	  91499466 ns/op
-BenchmarkFlateGo-8   	     156	 230702965 ns/op
+BenchmarkFlate-8     	     410	  86447354 ns/op
+BenchmarkFlateGo-8   	     172	 217746563 ns/op
 PASS
-ok  	github.com/pgavlin/warp/interpreter	113.849s
+ok  	github.com/pgavlin/warp/interpreter	111.099s
 goos: darwin
 goarch: amd64
 pkg: github.com/pgavlin/warp/interpreter
 cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
-BenchmarkFlate-8     	     386	  92756050 ns/op
-BenchmarkFlateGo-8   	     156	 230823273 ns/op
+BenchmarkFlate-8     	     410	  87136049 ns/op
+BenchmarkFlateGo-8   	     171	 208441586 ns/op
 PASS
-ok  	github.com/pgavlin/warp/interpreter	114.052s
+ok  	github.com/pgavlin/warp/interpreter	109.808s
 goos: darwin
 goarch: amd64
 pkg: github.com/pgavlin/warp/interpreter
 cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
-BenchmarkFlate-8     	     386	  92746966 ns/op
-BenchmarkFlateGo-8   	     156	 230387669 ns/op
+BenchmarkFlate-8     	     408	  85935596 ns/op
+BenchmarkFlateGo-8   	     170	 210250942 ns/op
 PASS
-ok  	github.com/pgavlin/warp/interpreter	113.861s
+ok  	github.com/pgavlin/warp/interpreter	109.459s

@@ -125,7 +125,7 @@ func (m *machine) alloc(nparams, nlocals, maxStack, maxBlocks int) *frame {
 			f := &m.frames[i]
 
 			frame := stack[f.fp-f.params:]
-			f.locals, frame = frame[0:len(f.locals):len(f.locals)], frame[len(f.locals):]
+			f.locals, frame = frame[0:len(f.locals):len(f.locals)+cap(f.stack)], frame[len(f.locals):]
 			f.blocks, frame = frame[0:len(f.blocks):cap(f.blocks)], frame[cap(f.blocks):]
 			f.stack = frame[0:len(f.stack):cap(f.stack)]
 		}
@@ -290,7 +290,6 @@ func (f *frame) runTrace(w io.Writer, fn *function) {
 		if ip == len(fn.icode) {
 			return
 		}
-		ip = ip
 	}
 }
 

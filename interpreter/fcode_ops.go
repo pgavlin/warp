@@ -246,6 +246,16 @@ const (
 	fopBrIfF64Le opcode = 0x0100 | code.OpF64Le
 	fopBrIfF64Ge opcode = 0x0100 | code.OpF64Ge
 
+	fopI32StoreZ   = 0x0100 | fopI32Store
+	fopI64StoreZ   = 0x0100 | fopI64Store
+	fopF32StoreZ   = 0x0100 | fopF32Store
+	fopF64StoreZ   = 0x0100 | fopF64Store
+	fopI32Store8Z  = 0x0100 | fopI32Store8
+	fopI32Store16Z = 0x0100 | fopI32Store16
+	fopI64Store8Z  = 0x0100 | fopI64Store8
+	fopI64Store16Z = 0x0100 | fopI64Store16
+	fopI64Store32Z = 0x0100 | fopI64Store32
+
 	fopLocalSetI  = 0x0200 | fopLocalSet
 	fopGlobalSetI = 0x0200 | fopGlobalSet
 
@@ -394,4 +404,14 @@ const (
 	fopBrIfF64GtI = 0x0200 | fopBrIfF64Gt
 	fopBrIfF64LeI = 0x0200 | fopBrIfF64Le
 	fopBrIfF64GeI = 0x0200 | fopBrIfF64Ge
+
+	fopI32StoreZI   = 0x0200 | fopI32StoreZ
+	fopI64StoreZI   = 0x0200 | fopI64StoreZ
+	fopF32StoreZI   = 0x0200 | fopF32StoreZ
+	fopF64StoreZI   = 0x0200 | fopF64StoreZ
+	fopI32Store8ZI  = 0x0200 | fopI32Store8Z
+	fopI32Store16ZI = 0x0200 | fopI32Store16Z
+	fopI64Store8ZI  = 0x0200 | fopI64Store8Z
+	fopI64Store16ZI = 0x0200 | fopI64Store16Z
+	fopI64Store32ZI = 0x0200 | fopI64Store32Z
 )
