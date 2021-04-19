@@ -268,9 +268,6 @@ func (f *frame) step(body []code.Instruction, ip int) int {
 		}
 
 		function := table[int(tableidx)]
-		if function == nil {
-			f.trap(exec.TrapUninitializedElement)
-		}
 
 		expectedSig := f.module.types[int(instr.Typeidx())]
 		actualSig := function.GetSignature()

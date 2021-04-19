@@ -2,39 +2,40 @@ goos: darwin
 goarch: amd64
 pkg: github.com/pgavlin/warp/interpreter
 cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
-BenchmarkFlate-8     	     406	  86419663 ns/op
-BenchmarkFlateGo-8   	     171	 208060643 ns/op
+BenchmarkFlate-8     	     422	  77688484 ns/op
+BenchmarkFlateGo-8   	     193	 188380624 ns/op
 PASS
-ok  	github.com/pgavlin/warp/interpreter	109.968s
+ok  	github.com/pgavlin/warp/interpreter	105.232s
 goos: darwin
 goarch: amd64
 pkg: github.com/pgavlin/warp/interpreter
 cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
-BenchmarkFlate-8     	     410	  86529419 ns/op
-BenchmarkFlateGo-8   	     172	 209524023 ns/op
+BenchmarkFlate-8     	     424	  76305077 ns/op
+BenchmarkFlateGo-8   	     192	 189198676 ns/op
 PASS
-ok  	github.com/pgavlin/warp/interpreter	109.889s
+ok  	github.com/pgavlin/warp/interpreter	104.369s
 goos: darwin
 goarch: amd64
 pkg: github.com/pgavlin/warp/interpreter
 cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
-BenchmarkFlate-8     	     410	  86447354 ns/op
-BenchmarkFlateGo-8   	     172	 217746563 ns/op
+BenchmarkFlate-8     	     421	  76880545 ns/op
+BenchmarkFlateGo-8   	     188	 188893617 ns/op
 PASS
-ok  	github.com/pgavlin/warp/interpreter	111.099s
+ok  	github.com/pgavlin/warp/interpreter	104.163s
 goos: darwin
 goarch: amd64
 pkg: github.com/pgavlin/warp/interpreter
 cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
-BenchmarkFlate-8     	     410	  87136049 ns/op
-BenchmarkFlateGo-8   	     171	 208441586 ns/op
+BenchmarkFlate-8     	     422	  77010905 ns/op
+BenchmarkFlateGo-8   	     190	 186436525 ns/op
 PASS
-ok  	github.com/pgavlin/warp/interpreter	109.808s
-goos: darwin
-goarch: amd64
-pkg: github.com/pgavlin/warp/interpreter
-cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
-BenchmarkFlate-8     	     408	  85935596 ns/op
-BenchmarkFlateGo-8   	     170	 210250942 ns/op
-PASS
-ok  	github.com/pgavlin/warp/interpreter	109.459s
+ok  	github.com/pgavlin/warp/interpreter	103.936s
+--- FAIL: TestSpec (2.86s)
+    --- FAIL: TestSpec/imports.wast (0.02s)
+        run.go:157: ignored: 360,2: assert_invalid: module was not invalid
+        run.go:159: 442,2: assert_trap: action did not trap
+        run.go:159: 453,2: assert_trap: action did not trap
+        run.go:157: ignored: 455,2: assert_invalid: module was not invalid
+FAIL
+exit status 1
+FAIL	github.com/pgavlin/warp/interpreter	8.163s

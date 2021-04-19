@@ -6,10 +6,12 @@ package wasm
 
 import (
 	"bytes"
+	"debug/dwarf"
 	"errors"
 	"fmt"
 	"io"
 	"reflect"
+	"strings"
 
 	"github.com/pgavlin/warp/wasm/internal/readpos"
 )
@@ -74,6 +76,62 @@ func (m *Module) Names() (*NameSection, error) {
 	}
 
 	return &names, nil
+}
+
+// DWARF returns the DWARF debugging info for the module, if any.
+func (m *Module) DWARF() (*dwarf.Data, error) {
+	dwarfSuffix := func(s *SectionCustom) string {
+		switch {
+		case strings.HasPrefix(s.Name, ".debug_"):
+			return s.Name[7:]
+		default:
+			return ""
+		}
+
+	}
+
+	// There are many DWARF sections, but these are the ones
+	// the debug/dwarf package started with.
+	var dat = map[string][]byte{"abbrev": nil, "info": nil, "str": nil, "line": nil, "ranges": nil}
+	for _, s := range m.Customs {
+		suffix := dwarfSuffix(s)
+		if suffix == "" {
+			continue
+		}
+		if _, ok := dat[suffix]; !ok {
+			continue
+		}
+		dat[suffix] = s.Data
+	}
+
+	d, err := dwarf.New(dat["abbrev"], nil, nil, dat["info"], dat["line"], nil, dat["ranges"], dat["str"])
+	if err != nil {
+		return nil, err
+	}
+
+	// Look for DWARF4 .debug_types sections and DWARF5 sections.
+	for i, s := range m.Customs {
+		suffix := dwarfSuffix(s)
+		if suffix == "" {
+			continue
+		}
+		if _, ok := dat[suffix]; ok {
+			// Already handled.
+			continue
+		}
+
+		if suffix == "types" {
+			if err := d.AddTypes(fmt.Sprintf("types-%d", i), s.Data); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := d.AddSection(".debug_"+suffix, s.Data); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return d, nil
 }
 
 // Custom returns a custom section with a specific name, if it exists.

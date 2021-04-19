@@ -105,37 +105,21 @@ func (f *HostFunction) UncheckedCall(thread *Thread, args, returns []uint64) {
 
 	vargs := make([]reflect.Value, len(args))
 	for i, v := range args {
-		av := reflect.New(t.In(i)).Elem()
+		t := t.In(i)
+
+		var av reflect.Value
 		switch f.sig.ParamTypes[i] {
 		case wasm.ValueTypeI32, wasm.ValueTypeI64:
-			switch av.Kind() {
-			case reflect.Int:
-				av.Set(reflect.ValueOf(int(v)))
-			case reflect.Int8:
-				av.Set(reflect.ValueOf(int8(v)))
-			case reflect.Int16:
-				av.Set(reflect.ValueOf(int16(v)))
-			case reflect.Int32:
-				av.Set(reflect.ValueOf(int32(v)))
-			case reflect.Int64:
-				av.Set(reflect.ValueOf(int64(v)))
-			case reflect.Uint:
-				av.Set(reflect.ValueOf(uint(v)))
-			case reflect.Uint8:
-				av.Set(reflect.ValueOf(uint8(v)))
-			case reflect.Uint16:
-				av.Set(reflect.ValueOf(uint16(v)))
-			case reflect.Uint32:
-				av.Set(reflect.ValueOf(uint32(v)))
-			case reflect.Uint64:
-				av.Set(reflect.ValueOf(uint64(v)))
+			switch t.Kind() {
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				av = reflect.ValueOf(args[i]).Convert(t)
 			default:
-				panic("invalid arguemnt type")
+				panic("invalid argument type")
 			}
 		case wasm.ValueTypeF32:
-			av.Set(reflect.ValueOf(math.Float32frombits(uint32(v))))
+			av = reflect.ValueOf(math.Float32frombits(uint32(v))).Convert(t)
 		case wasm.ValueTypeF64:
-			av.Set(reflect.ValueOf(math.Float64frombits(v)))
+			av = reflect.ValueOf(math.Float64frombits(v)).Convert(t)
 		default:
 			panic("unreachable")
 		}
@@ -166,6 +150,10 @@ func (f *HostFunction) UncheckedCall(thread *Thread, args, returns []uint64) {
 			panic("unreachable")
 		}
 	}
+}
+
+func (f *HostFunction) Func() interface{} {
+	return f.method.Interface()
 }
 
 type hostModule struct {

@@ -1,12 +1,12 @@
-//go:build !memtrace && (js || plan9 || windows || armbe || arm64be || ppc || ppc64 || mips || mips64 || s390x)
-// +build js plan9 windows armbe arm64be ppc ppc64 mips mips64 s390x
-// +build !memtrace
+//go:build (!memtrace && !js && !plan9 && !windows && !armbe && !arm64be && !ppc && !ppc64 && !mips && !mips64 && !s390x)
+// +build !memtrace,!js,!plan9,!windows,!armbe,!arm64be,!ppc,!ppc64,!mips,!mips64,!s390x
 
 package interpreter
 
 import (
 	"math"
 	"math/bits"
+	"unsafe"
 
 	"github.com/pgavlin/warp/exec"
 )
@@ -42,6 +42,7 @@ func (f *frame) runFCode(fn *function) {
 
 	// establish the frame
 	frame := lframe(f.locals[:frameSize])
+	mem := f.module.mem0.Start()
 
 	ip := 0
 	for {
@@ -165,48 +166,48 @@ func (f *frame) runFCode(fn *function) {
 			global.Set(frame[instr.src1])
 
 		case fopI32Load, fopF32Load:
-			frame[instr.dest] = uint64(f.module.mem0.Uint32(uint32(frame[instr.src1]), instr.Offset()))
+			frame[instr.dest] = uint64(*(*uint32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])) + uintptr(instr.Offset()))))
 		case fopI64Load, fopF64Load:
-			frame[instr.dest] = f.module.mem0.Uint64(uint32(frame[instr.src1]), instr.Offset())
+			frame[instr.dest] = *(*uint64)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])) + uintptr(instr.Offset())))
 
 		case fopI32Load8S:
-			frame[instr.dest] = uint64(int32(int8(f.module.mem0.Byte(uint32(frame[instr.src1]), instr.Offset()))))
+			frame[instr.dest] = uint64(int32(*(*int8)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])) + uintptr(instr.Offset())))))
 		case fopI32Load8U:
-			frame[instr.dest] = uint64(int32(f.module.mem0.Byte(uint32(frame[instr.src1]), instr.Offset())))
+			frame[instr.dest] = uint64(int32(*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])) + uintptr(instr.Offset())))))
 		case fopI32Load16S:
-			frame[instr.dest] = uint64(int32(int16(f.module.mem0.Uint16(uint32(frame[instr.src1]), instr.Offset()))))
+			frame[instr.dest] = uint64(int32(*(*int16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])) + uintptr(instr.Offset())))))
 		case fopI32Load16U:
-			frame[instr.dest] = uint64(int32(f.module.mem0.Uint16(uint32(frame[instr.src1]), instr.Offset())))
+			frame[instr.dest] = uint64(int32(*(*uint16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])) + uintptr(instr.Offset())))))
 
 		case fopI64Load8S:
-			frame[instr.dest] = uint64(int64(int8(f.module.mem0.Byte(uint32(frame[instr.src1]), instr.Offset()))))
+			frame[instr.dest] = uint64(int64(*(*int8)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])) + uintptr(instr.Offset())))))
 		case fopI64Load8U:
-			frame[instr.dest] = uint64(int64(f.module.mem0.Byte(uint32(frame[instr.src1]), instr.Offset())))
+			frame[instr.dest] = uint64(int64(*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])) + uintptr(instr.Offset())))))
 		case fopI64Load16S:
-			frame[instr.dest] = uint64(int64(int16(f.module.mem0.Uint16(uint32(frame[instr.src1]), instr.Offset()))))
+			frame[instr.dest] = uint64(int64(*(*int16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])) + uintptr(instr.Offset())))))
 		case fopI64Load16U:
-			frame[instr.dest] = uint64(int64(f.module.mem0.Uint16(uint32(frame[instr.src1]), instr.Offset())))
+			frame[instr.dest] = uint64(int64(*(*uint16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])) + uintptr(instr.Offset())))))
 		case fopI64Load32S:
-			frame[instr.dest] = uint64(int64(int32(f.module.mem0.Uint32(uint32(frame[instr.src1]), instr.Offset()))))
+			frame[instr.dest] = uint64(int64(*(*int32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])) + uintptr(instr.Offset())))))
 		case fopI64Load32U:
-			frame[instr.dest] = uint64(int64(f.module.mem0.Uint32(uint32(frame[instr.src1]), instr.Offset())))
+			frame[instr.dest] = uint64(int64(*(*uint32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])) + uintptr(instr.Offset())))))
 
 		case fopI32Store, fopF32Store:
-			f.module.mem0.PutUint32(uint32(frame[instr.src1]), uint32(frame[instr.dest]), instr.Offset())
+			*(*uint32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = uint32(frame[instr.src1])
 		case fopI64Store, fopF64Store:
-			f.module.mem0.PutUint64(uint64(frame[instr.src1]), uint32(frame[instr.dest]), instr.Offset())
+			*(*uint64)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = uint64(frame[instr.src1])
 
 		case fopI32Store8:
-			f.module.mem0.PutByte(byte(frame[instr.src1]), uint32(frame[instr.dest]), instr.Offset())
+			*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = byte(frame[instr.src1])
 		case fopI32Store16:
-			f.module.mem0.PutUint16(uint16(frame[instr.src1]), uint32(frame[instr.dest]), instr.Offset())
+			*(*uint16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = uint16(frame[instr.src1])
 
 		case fopI64Store8:
-			f.module.mem0.PutByte(byte(frame[instr.src1]), uint32(frame[instr.dest]), instr.Offset())
+			*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = byte(frame[instr.src1])
 		case fopI64Store16:
-			f.module.mem0.PutUint16(uint16(frame[instr.src1]), uint32(frame[instr.dest]), instr.Offset())
+			*(*uint16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = uint16(frame[instr.src1])
 		case fopI64Store32:
-			f.module.mem0.PutUint32(uint32(frame[instr.src1]), uint32(frame[instr.dest]), instr.Offset())
+			*(*uint32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = uint32(frame[instr.src1])
 
 		case fopMemorySize:
 			frame[instr.dest] = uint64(int32(f.module.mem0.Size()))
@@ -785,21 +786,21 @@ func (f *frame) runFCode(fn *function) {
 			}
 
 		case fopI32StoreZ, fopF32StoreZ:
-			f.module.mem0.PutUint32(0, uint32(frame[instr.dest]), instr.Offset())
+			*(*uint32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = 0
 		case fopI64StoreZ, fopF64StoreZ:
-			f.module.mem0.PutUint64(0, uint32(frame[instr.dest]), instr.Offset())
+			*(*uint64)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = 0
 
 		case fopI32Store8Z:
-			f.module.mem0.PutByte(0, uint32(frame[instr.dest]), instr.Offset())
+			*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = 0
 		case fopI32Store16Z:
-			f.module.mem0.PutUint16(0, uint32(frame[instr.dest]), instr.Offset())
+			*(*uint16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = 0
 
 		case fopI64Store8Z:
-			f.module.mem0.PutByte(0, uint32(frame[instr.dest]), instr.Offset())
+			*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = 0
 		case fopI64Store16Z:
-			f.module.mem0.PutUint16(0, uint32(frame[instr.dest]), instr.Offset())
+			*(*uint16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = 0
 		case fopI64Store32Z:
-			f.module.mem0.PutUint32(0, uint32(frame[instr.dest]), instr.Offset())
+			*(*uint32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])) + uintptr(instr.Offset()))) = 0
 
 		case fopLocalSetI:
 			frame[instr.dest] = instr.src2
@@ -808,48 +809,48 @@ func (f *frame) runFCode(fn *function) {
 			global.Set(instr.src2)
 
 		case fopI32LoadI, fopF32LoadI:
-			frame[instr.dest] = uint64(f.module.mem0.Uint32At(uint32(frame[instr.src1])))
+			frame[instr.dest] = uint64(*(*uint32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])))))
 		case fopI64LoadI, fopF64LoadI:
-			frame[instr.dest] = f.module.mem0.Uint64At(uint32(frame[instr.src1]))
+			frame[instr.dest] = *(*uint64)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1]))))
 
 		case fopI32Load8SI:
-			frame[instr.dest] = uint64(int32(int8(f.module.mem0.ByteAt(uint32(frame[instr.src1])))))
+			frame[instr.dest] = uint64(int32(int8(*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])))))))
 		case fopI32Load8UI:
-			frame[instr.dest] = uint64(int32(f.module.mem0.ByteAt(uint32(frame[instr.src1]))))
+			frame[instr.dest] = uint64(int32(*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1]))))))
 		case fopI32Load16SI:
-			frame[instr.dest] = uint64(int32(int16(f.module.mem0.Uint16At(uint32(frame[instr.src1])))))
+			frame[instr.dest] = uint64(int32(*(*int16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1]))))))
 		case fopI32Load16UI:
-			frame[instr.dest] = uint64(int32(f.module.mem0.Uint16At(uint32(frame[instr.src1]))))
+			frame[instr.dest] = uint64(int32(*(*uint16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1]))))))
 
 		case fopI64Load8SI:
-			frame[instr.dest] = uint64(int64(int8(f.module.mem0.ByteAt(uint32(frame[instr.src1])))))
+			frame[instr.dest] = uint64(int64(int8(*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1])))))))
 		case fopI64Load8UI:
-			frame[instr.dest] = uint64(int64(f.module.mem0.ByteAt(uint32(frame[instr.src1]))))
+			frame[instr.dest] = uint64(int64(*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1]))))))
 		case fopI64Load16SI:
-			frame[instr.dest] = uint64(int64(int16(f.module.mem0.Uint16At(uint32(frame[instr.src1])))))
+			frame[instr.dest] = uint64(int64(*(*int16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1]))))))
 		case fopI64Load16UI:
-			frame[instr.dest] = uint64(int64(f.module.mem0.Uint16At(uint32(frame[instr.src1]))))
+			frame[instr.dest] = uint64(int64(*(*uint16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1]))))))
 		case fopI64Load32SI:
-			frame[instr.dest] = uint64(int64(int32(f.module.mem0.Uint32At(uint32(frame[instr.src1])))))
+			frame[instr.dest] = uint64(int64(*(*int32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1]))))))
 		case fopI64Load32UI:
-			frame[instr.dest] = uint64(int64(f.module.mem0.Uint32At(uint32(frame[instr.src1]))))
+			frame[instr.dest] = uint64(int64(*(*uint32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.src1]))))))
 
 		case fopI32StoreI, fopF32StoreI:
-			f.module.mem0.PutUint32At(uint32(frame[instr.src1]), uint32(frame[instr.dest]))
+			*(*uint32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = uint32(frame[instr.src1])
 		case fopI64StoreI, fopF64StoreI:
-			f.module.mem0.PutUint64At(uint64(frame[instr.src1]), uint32(frame[instr.dest]))
+			*(*uint64)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = uint64(frame[instr.src1])
 
 		case fopI32Store8I:
-			f.module.mem0.PutByteAt(byte(frame[instr.src1]), uint32(frame[instr.dest]))
+			*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = byte(frame[instr.src1])
 		case fopI32Store16I:
-			f.module.mem0.PutUint16At(uint16(frame[instr.src1]), uint32(frame[instr.dest]))
+			*(*uint16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = uint16(frame[instr.src1])
 
 		case fopI64Store8I:
-			f.module.mem0.PutByteAt(byte(frame[instr.src1]), uint32(frame[instr.dest]))
+			*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = byte(frame[instr.src1])
 		case fopI64Store16I:
-			f.module.mem0.PutUint16At(uint16(frame[instr.src1]), uint32(frame[instr.dest]))
+			*(*uint16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = uint16(frame[instr.src1])
 		case fopI64Store32I:
-			f.module.mem0.PutUint32At(uint32(frame[instr.src1]), uint32(frame[instr.dest]))
+			*(*uint32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = uint32(frame[instr.src1])
 
 		case fopI32EqI:
 			v2, v1 := int32(instr.src2), int32(frame[instr.src1])
@@ -1294,21 +1295,21 @@ func (f *frame) runFCode(fn *function) {
 			}
 
 		case fopI32StoreZI, fopF32StoreZI:
-			f.module.mem0.PutUint32At(0, uint32(frame[instr.dest]))
+			*(*uint32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = 0
 		case fopI64StoreZI, fopF64StoreZI:
-			f.module.mem0.PutUint64At(0, uint32(frame[instr.dest]))
+			*(*uint64)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = 0
 
 		case fopI32Store8ZI:
-			f.module.mem0.PutByteAt(0, uint32(frame[instr.dest]))
+			*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = 0
 		case fopI32Store16ZI:
-			f.module.mem0.PutUint16At(0, uint32(frame[instr.dest]))
+			*(*uint16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = 0
 
 		case fopI64Store8ZI:
-			f.module.mem0.PutByteAt(0, uint32(frame[instr.dest]))
+			*(*byte)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = 0
 		case fopI64Store16ZI:
-			f.module.mem0.PutUint16At(0, uint32(frame[instr.dest]))
+			*(*uint16)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = 0
 		case fopI64Store32ZI:
-			f.module.mem0.PutUint32At(0, uint32(frame[instr.dest]))
+			*(*uint32)(unsafe.Pointer(mem + uintptr(uint32(frame[instr.dest])))) = 0
 		}
 
 		ip++

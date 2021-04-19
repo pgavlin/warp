@@ -56,6 +56,10 @@ func (m *Memory) Bytes() []byte {
 	return m.bytes
 }
 
+func (m *Memory) Start() uintptr {
+	panic("Start() is not supported when tracing memory accesses")
+}
+
 func effectiveAddress(base, offset uint32) int {
 	sum64 := uint64(base) + uint64(offset)
 	return int(uint32(sum64) | uint32(sum64>>1)&0x80000000)

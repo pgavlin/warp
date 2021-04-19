@@ -18,6 +18,8 @@ func Command() *cobra.Command {
 	var isCommand bool
 	var outputPath string
 	var format bool
+	var useRawPointers bool
+	var noInternalThreads bool
 
 	command := &cobra.Command{
 		Use:   "compile",
@@ -82,11 +84,15 @@ func Command() *cobra.Command {
 				modName = baseName
 			}
 
+			options := golang.Options{
+				UseRawPointers:    useRawPointers,
+				NoInternalThreads: noInternalThreads,
+			}
 			if !isCommand {
-				return golang.CompileModule(dest, packageName, modName, mod)
+				return golang.CompileModule(dest, packageName, modName, mod, &options)
 			}
 
-			return golang.CompileCommand(dest, modName, mod)
+			return golang.CompileCommand(dest, modName, mod, &options)
 		},
 	}
 
@@ -94,6 +100,8 @@ func Command() *cobra.Command {
 	command.PersistentFlags().BoolVarP(&isCommand, "cmd", "c", true, "true to automatically detect WASI commands")
 	command.PersistentFlags().StringVarP(&outputPath, "out", "o", "", "the path for the output file. Defaults to the name of the input file + '.go'")
 	command.PersistentFlags().BoolVarP(&format, "format", "f", false, "true to gofmt the generated source code")
+	command.PersistentFlags().BoolVar(&useRawPointers, "raw-pointers", false, "true to compile loads and stores to raw pointer accesses")
+	command.PersistentFlags().BoolVar(&noInternalThreads, "no-internal-threads", false, "true to elide stack depth tracking in generated code")
 
 	return command
 }

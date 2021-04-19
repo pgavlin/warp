@@ -53,6 +53,8 @@ func TranslateRuntimeError(err runtime.Error) (Trap, bool) {
 		return TrapOutOfBoundsMemoryAccess, true
 	case strings.HasPrefix(err.Error(), "runtime error: slice bounds out of range"):
 		return TrapOutOfBoundsMemoryAccess, true
+	case strings.HasPrefix(err.Error(), "runtime error: invalid memory address or nil pointer dereference"):
+		return TrapOutOfBoundsMemoryAccess, true
 	case strings.HasPrefix(err.Error(), "runtime error: integer divide by zero"):
 		return TrapIntegerDivideByZero, true
 	default:

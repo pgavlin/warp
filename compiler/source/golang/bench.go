@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"text/template"
 
 	"github.com/pgavlin/warp/bench/flate"
@@ -22,6 +23,14 @@ type benchmark struct {
 	args     interface{}
 }
 
+func useRawPointers() bool {
+	switch runtime.GOOS + "/" + runtime.GOARCH {
+	case "android/amd64", "android/arm64", "darwin/amd64", "darwin/arm64", "dragonfly/amd64", "freebsd/amd64", "freebsd/arm64", "illumos/amd64", "ios/amd64", "ios/arm64", "linux/amd64", "linux/arm64", "linux/mips64le", "linux/ppc64le", "linux/riscv64", "netbsd/amd64", "netbsd/arm64", "openbsd/amd64", "openbsd/arm64", "solaris/amd64":
+		return true
+	}
+	return false
+}
+
 func (b *benchmark) compileModule(root, name string, module *wasm.Module) error {
 	mt, err := os.Create(filepath.Join(root, name+"_module_test.go"))
 	if err != nil {
@@ -29,7 +38,10 @@ func (b *benchmark) compileModule(root, name string, module *wasm.Module) error 
 	}
 	defer mt.Close()
 
-	return golang.CompileModule(mt, "bench", name, module)
+	return golang.CompileModule(mt, "bench", name, module, &golang.Options{
+		UseRawPointers:    useRawPointers(),
+		NoInternalThreads: true,
+	})
 }
 
 func (b *benchmark) compile(root string) error {

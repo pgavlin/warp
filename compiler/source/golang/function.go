@@ -38,8 +38,13 @@ func goType(t wasm.ValueType) string {
 }
 
 func (m *moduleCompiler) emitFunctionSignature(w io.Writer, sig wasm.FunctionSig, indirect bool) error {
-	if err := printf(w, "(m *%sInstance, t *exec.Thread", m.name); err != nil {
+	if err := printf(w, "(m *%sInstance", m.name); err != nil {
 		return err
+	}
+	if !m.noInternalThreads {
+		if err := printf(w, ", t *exec.Thread"); err != nil {
+			return err
+		}
 	}
 	if indirect {
 		if err := printf(w, ", tableidx uint32"); err != nil {
@@ -105,7 +110,7 @@ func (f *functionCompiler) compile(m *moduleCompiler, index int, typeIndex uint3
 	}
 	if len(f.Stack) > 0 {
 		f.ImportInstruction(0, code.Return(), s)
-	} else {
+	} else if !m.noInternalThreads {
 		// We need a terminal return for Leave().
 		f.Body = append(f.Body, &wax.Def{Expression: &wax.Expression{Function: &f.Function, Instr: code.Return()}})
 	}
@@ -259,8 +264,14 @@ func (f *functionCompiler) emit(w io.Writer) error {
 	if err := f.m.emitFunctionSignature(w, f.Signature, false); err != nil {
 		return err
 	}
-	if err := printf(w, "{\n\tt.Enter()\n"); err != nil {
+	if err := printf(w, "{\n"); err != nil {
 		return err
+	}
+
+	if !f.m.noInternalThreads {
+		if err := printf(w, "\tt.Enter()\n"); err != nil {
+			return err
+		}
 	}
 
 	for i, t := range f.Locals[len(f.Signature.ParamTypes):] {
@@ -292,6 +303,14 @@ func (m *moduleCompiler) emitImportedFunction(w io.Writer, index uint32, sig was
 		return err
 	}
 
+	threadArg := "t"
+	if m.noInternalThreads {
+		if err := printf(w, "\tt := exec.NewThread(0)\n"); err != nil {
+			return err
+		}
+		threadArg = "&t"
+	}
+
 	if err := printf(w, "a := [...]uint64{"); err != nil {
 		return err
 	}
@@ -317,7 +336,7 @@ func (m *moduleCompiler) emitImportedFunction(w io.Writer, index uint32, sig was
 	if err := printf(w, "var r [%d]uint64\n", len(sig.ReturnTypes)); err != nil {
 		return err
 	}
-	if err := printf(w, "m.importedFunctions[%d].UncheckedCall(t, a[:], r[:])\n", index); err != nil {
+	if err := printf(w, "m.importedFunctions[%d].UncheckedCall(%s, a[:], r[:])\n", index, threadArg); err != nil {
 		return err
 	}
 	if len(sig.ReturnTypes) > 0 {
@@ -442,9 +461,18 @@ func (f *functionCompiler) emitBlockOuts(w io.Writer, b *wax.Block, uses wax.Use
 func (f *functionCompiler) load(x *wax.Expression, loadWidth int) string {
 	switch {
 	case x.Instr.Offset() == 0:
+		if f.m.useRawPointers {
+			return fmt.Sprintf("*(*uint%v)(unsafe.Pointer(m.mem + uintptr(uint32(%4U))))", loadWidth, x.Uses[0])
+		}
 		return fmt.Sprintf("m.mem0.Uint%vAt(uint32(%4U))", loadWidth, x.Uses[0])
 	case isConst0(x.Uses[0]):
+		if f.m.useRawPointers {
+			return fmt.Sprintf("*(*uint%v)(unsafe.Pointer(m.mem + %d))", loadWidth, x.Instr.Offset())
+		}
 		return fmt.Sprintf("m.mem0.Uint%vAt(%d)", loadWidth, x.Instr.Offset())
+	}
+	if f.m.useRawPointers {
+		return fmt.Sprintf("*(*uint%v)(unsafe.Pointer(m.mem + uintptr(uint32(%4U)) + %d))", loadWidth, x.Uses[0], x.Instr.Offset())
 	}
 	return fmt.Sprintf("m.mem0.Uint%v(uint32(%4U), %d)", loadWidth, x.Uses[0], x.Instr.Offset())
 }
@@ -452,9 +480,18 @@ func (f *functionCompiler) load(x *wax.Expression, loadWidth int) string {
 func (f *functionCompiler) emitStore(w io.Writer, x *wax.Def, storeWidth int, value string) error {
 	switch {
 	case x.Instr.Offset() == 0:
+		if f.m.useRawPointers {
+			return printf(w, "*(*uint%v)(unsafe.Pointer(m.mem + uintptr(uint32(%4U)))) = %s\n", storeWidth, x.Uses[0], value)
+		}
 		return printf(w, "m.mem0.PutUint%vAt(%s, uint32(%4U))\n", storeWidth, value, x.Uses[0])
 	case isConst0(x.Uses[0]):
+		if f.m.useRawPointers {
+			return printf(w, "*(*uint%v)(unsafe.Pointer(m.mem + %d)) = %s\n", storeWidth, x.Instr.Offset(), value)
+		}
 		return printf(w, "m.mem0.PutUint%vAt(%s, %d)\n", storeWidth, value, x.Instr.Offset())
+	}
+	if f.m.useRawPointers {
+		return printf(w, "*(*uint%v)(unsafe.Pointer(m.mem + uintptr(uint32(%4U)) + %d)) = %s\n", storeWidth, x.Uses[0], x.Instr.Offset(), value)
 	}
 	return printf(w, "m.mem0.PutUint%v(%s, uint32(%4U), %d)\n", storeWidth, value, x.Uses[0], x.Instr.Offset())
 }
@@ -562,11 +599,22 @@ func (f *functionCompiler) emitDef(w io.Writer, x *wax.Def) error {
 				return err
 			}
 		}
-		return printf(w, "%s(m, t%v%u)\n", f.m.functionName(x.Instr.Funcidx()), comma(len(x.Uses)), x.Uses)
+
+		threadArg := ""
+		if !f.m.noInternalThreads {
+			threadArg = ", t"
+		}
+
+		return printf(w, "%s(m%s%s%u)\n", f.m.functionName(x.Instr.Funcidx()), threadArg, comma(len(x.Uses)), x.Uses)
 
 	case code.OpCallIndirect:
 		typeidx := x.Instr.Typeidx()
 		sig := f.m.module.Types.Entries[typeidx]
+
+		threadArg := ""
+		if !f.m.noInternalThreads {
+			threadArg = ", t"
+		}
 
 		if len(x.Types) > 0 {
 			for i := range x.Types {
@@ -580,7 +628,7 @@ func (f *functionCompiler) emitDef(w io.Writer, x *wax.Def) error {
 		}
 		tableidx := x.Uses[len(x.Uses)-1]
 		uses := x.Uses[:len(x.Uses)-1]
-		return printf(w, "%sCallIndirect(m, t, uint32(%4U)%v%u)\n", f.m.functionTypeName(sig), tableidx, comma(len(uses)), uses)
+		return printf(w, "%sCallIndirect(m%s, uint32(%4U)%v%u)\n", f.m.functionTypeName(sig), threadArg, tableidx, comma(len(uses)), uses)
 
 	case code.OpReturn:
 		if len(x.Uses) > 0 {
@@ -593,7 +641,12 @@ func (f *functionCompiler) emitDef(w io.Writer, x *wax.Def) error {
 				return err
 			}
 		}
-		return printf(w, "t.Leave()\nreturn\n")
+		if !f.m.noInternalThreads {
+			if err := printf(w, "t.Leave()\n"); err != nil {
+				return err
+			}
+		}
+		return printf(w, "return\n")
 
 	case code.OpDrop:
 		return printf(w, "_ = %u\n", x.Uses[0])

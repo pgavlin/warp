@@ -8,7 +8,11 @@ type Table struct {
 
 // NewTable creates a new WASM table.
 func NewTable(min, max uint32) Table {
-	return Table{min: min, max: max, entries: make([]Function, min)}
+	t := Table{min: min, max: max, entries: make([]Function, min)}
+	for i := range t.entries {
+		t.entries[i] = UninitializedFunction
+	}
+	return t
 }
 
 // Limits returns the minimum and maximum size of the table in elements.

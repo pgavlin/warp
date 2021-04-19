@@ -57,7 +57,7 @@ func TestCompiledModule(t *testing.T) {
 	}
 
 	var source bytes.Buffer
-	err := CompileModule(&source, "test", "test", def)
+	err := CompileModule(&source, "test", "test", def, nil)
 	require.NoError(t, err)
 
 	var test bytes.Buffer

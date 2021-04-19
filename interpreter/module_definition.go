@@ -76,7 +76,7 @@ func (def *moduleDefinition) Allocate(name string) (exec.AllocatedModule, error)
 		min := mem0Def.Limits.Initial
 		max := mem0Def.Limits.Maximum
 		if mem0Def.Limits.Flags == 0 {
-			max = ^uint32(0)
+			max = 65536
 		}
 		m := exec.NewMemory(min, max)
 		module.mem0 = &m

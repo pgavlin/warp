@@ -20,7 +20,9 @@ import (
 var ErrInvalidMemoryIndex = fmt.Errorf("invalid memory index")
 
 type moduleCompiler struct {
-	isCommand bool
+	isCommand         bool
+	noInternalThreads bool
+	useRawPointers    bool
 
 	packageName  string
 	name         string
@@ -137,10 +139,26 @@ func Format(w io.Writer) io.Writer {
 	return &formatter{w: w}
 }
 
+// Options records compilation options.
+type Options struct {
+	// UseRawPointers enables the use of raw pointers in place of calls to exec.Memory methods for
+	// loads and stores.
+	UseRawPointers bool
+	// NoInternalThreads disables the use of *exec.Thread inside the generated code.
+	NoInternalThreads bool
+}
+
+func (o *Options) apply(m *moduleCompiler) {
+	if o != nil {
+		m.useRawPointers = o.UseRawPointers
+		m.noInternalThreads = o.NoInternalThreads
+	}
+}
+
 // CompileModule compiles the given module into Go source code and writes the source to
 // the given writer. The source will be contained in the named package, and will contain
 // an exec.ModuleDefintion with the exported version of the given name.
-func CompileModule(w io.Writer, packageName, name string, module *wasm.Module) error {
+func CompileModule(w io.Writer, packageName, name string, module *wasm.Module, options *Options) error {
 	if err := validate.ValidateModule(module, true); err != nil {
 		return err
 	}
@@ -151,6 +169,8 @@ func CompileModule(w io.Writer, packageName, name string, module *wasm.Module) e
 		exportedName: exportName(name),
 		module:       module,
 	}
+	options.apply(&compiler)
+
 	compiler.compile()
 	return compiler.emit(w)
 }
@@ -158,7 +178,7 @@ func CompileModule(w io.Writer, packageName, name string, module *wasm.Module) e
 // CompileCommand compiles the given WASI module into Go source code and writes the source
 // to the given writer. The source will be contained in package main, and will contain a
 // main function.
-func CompileCommand(w io.Writer, name string, module *wasm.Module) error {
+func CompileCommand(w io.Writer, name string, module *wasm.Module, options *Options) error {
 	if err := validate.ValidateModule(module, true); err != nil {
 		return err
 	}
@@ -170,6 +190,8 @@ func CompileCommand(w io.Writer, name string, module *wasm.Module) error {
 		exportedName: exportName(name),
 		module:       module,
 	}
+	options.apply(&compiler)
+
 	compiler.compile()
 	return compiler.emit(w)
 }
@@ -358,6 +380,7 @@ import (
 	imports := []string{
 		"math",
 		"math/bits",
+		"unsafe",
 		"github.com/pgavlin/warp/exec",
 		"github.com/pgavlin/warp/wasm",
 	}
@@ -452,6 +475,9 @@ func (m *moduleCompiler) emitModuleType(w io.Writer) error {
 
 	mem0   *exec.Memory
 	table0 *exec.Table
+
+	mem    uintptr
+	table  []exec.Function
 
 	importedFunctions []exec.Function
 	importedGlobals   []*exec.Global
@@ -558,7 +584,13 @@ func (m *allocated{{.ExportedName}}) Instantiate(imports exec.ImportResolver) (e
 	if err := m.checkOffsets(); err != nil {
 		return nil, err
 	}
+	{{if or .ImportTable0 .NewTable0 -}}
+	m.table = m.table0.Entries()
+	{{- end}}
 	m.initTable()
+	{{if and .UseRawPointers (or .ImportMem0 .NewMem0) -}}
+	m.mem = m.mem0.Start()
+	{{- end}}
 	m.initMemory()
 
 	{{if .HasExports -}}
@@ -609,7 +641,7 @@ func (m *allocated{{.ExportedName}}) Instantiate(imports exec.ImportResolver) (e
 		minMem0 = mem0Def.Limits.Initial
 		maxMem0 = mem0Def.Limits.Maximum
 		if mem0Def.Limits.Flags == 0 {
-			maxMem0 = ^uint32(0)
+			maxMem0 = 65536
 		}
 	}
 
@@ -691,6 +723,7 @@ func (m *allocated{{.ExportedName}}) Instantiate(imports exec.ImportResolver) (e
 	return t.Execute(w, map[string]interface{}{
 		"Name":              m.name,
 		"ExportedName":      m.exportedName,
+		"UseRawPointers":    m.useRawPointers,
 		"ImportMem0":        importMem0,
 		"NewMem0":           newMem0,
 		"MinMem0":           minMem0,
@@ -1139,31 +1172,23 @@ func (m *{{.Name}}Instance) GetGlobal(name string) (*exec.Global, error) {
 
 func (m *moduleCompiler) emitHelpers(w io.Writer) error {
 	t := template.Must(template.New("Helpers").Parse(`func (m *{{.Name}}Instance) tableEntry(tableidx uint32) exec.Function {
-	table := m.table0.Entries()
-
-	if tableidx >= uint32(len(table)) {
+	if tableidx >= uint32(len(m.table)) {
 		panic(exec.TrapUndefinedElement)
 	}
-
-	function := table[int(tableidx)]
-	if function == nil {
-		panic(exec.TrapUninitializedElement)
-	}
-	
-	return function
+	return m.table[tableidx]
 }
 
-func (m *{{.Name}}Instance) callIndirect(t *exec.Thread, tableidx, typeidx uint32, args, results []uint64) {
-	m.callFunction(t, m.tableEntry(tableidx), typeidx, args, results)
-}
-
-func (m *{{.Name}}Instance) callFunction(t *exec.Thread, function exec.Function, typeidx uint32, args, results []uint64) {
+func (m *{{.Name}}Instance) callFunction({{.ThreadParam}}function exec.Function, typeidx uint32, args, results []uint64) {
 	expectedSig := {{.ExportedName}}.types[int(typeidx)]
 	actualSig := function.GetSignature()
 	if !actualSig.Equals(expectedSig) {
 		panic(exec.TrapIndirectCallTypeMismatch)
 	}
 
+	{{if not .ThreadParam -}}
+	thread := exec.NewThread(0)
+	t := &thread
+	{{- end}}
 	function.UncheckedCall(t, args, results)
 }
 
@@ -1176,10 +1201,18 @@ func (m *{{.Name}}Instance) i32Bool(b bool) int32 {
 
 var _ = math.MaxInt32
 var _ = bits.UintSize
+var _ = unsafe.Pointer(uintptr(0))
 `))
+
+	threadParam := "t *exec.Thread, "
+	if m.noInternalThreads {
+		threadParam = ""
+	}
+
 	return t.Execute(w, map[string]interface{}{
 		"Name":         m.name,
 		"ExportedName": m.exportedName,
+		"ThreadParam":  threadParam,
 	})
 }
 
@@ -1235,12 +1268,12 @@ func (m *moduleCompiler) emitFunctionType(w io.Writer, sig wasm.FunctionSig, typ
 	}
 
 	// Emit the `Call` function.
-	if err := emitCallFunction(w, sig, name); err != nil {
+	if err := emitCallFunction(w, sig, name, m.noInternalThreads); err != nil {
 		return err
 	}
 
 	// Emit the `UncheckedCall` function.
-	return emitUncheckedCallFunction(w, sig, name)
+	return emitUncheckedCallFunction(w, sig, name, m.noInternalThreads)
 }
 
 func (m *moduleCompiler) emitIndirectCallFunction(w io.Writer, sig wasm.FunctionSig, typeidx uint32, name string) error {
@@ -1253,12 +1286,18 @@ func (m *moduleCompiler) emitIndirectCallFunction(w io.Writer, sig wasm.Function
 	if err := printf(w, " {\n\tfunction := m.tableEntry(tableidx)\n\tif f, ok := function.(*%s); ok {\n\t\t", name); err != nil {
 		return err
 	}
+
+	threadArg := ", t"
+	if m.noInternalThreads {
+		threadArg = ""
+	}
+
 	if len(sig.ReturnTypes) > 0 {
 		if err := printf(w, "return "); err != nil {
 			return err
 		}
 	}
-	if err := printf(w, "f.f(f.m, t"); err != nil {
+	if err := printf(w, "f.f(f.m%s", threadArg); err != nil {
 		return err
 	}
 	for i := range sig.ParamTypes {
@@ -1305,6 +1344,11 @@ func (m *moduleCompiler) emitIndirectCallFunction(w io.Writer, sig wasm.Function
 		args = "ca[:]"
 	}
 
+	threadArg = "t, "
+	if m.noInternalThreads {
+		threadArg = ""
+	}
+
 	returns := "nil"
 	if len(sig.ReturnTypes) > 0 {
 		if err := printf(w, "var cr [%d]uint64\n", len(sig.ReturnTypes)); err != nil {
@@ -1313,7 +1357,7 @@ func (m *moduleCompiler) emitIndirectCallFunction(w io.Writer, sig wasm.Function
 		returns = "cr[:]"
 	}
 
-	if err := printf(w, "m.callFunction(t, function, %d, %s, %s)\n", typeidx, args, returns); err != nil {
+	if err := printf(w, "m.callFunction(%sfunction, %d, %s, %s)\n", threadArg, typeidx, args, returns); err != nil {
 		return err
 	}
 
@@ -1358,7 +1402,7 @@ func (m *moduleCompiler) emitFactoryFunction(w io.Writer, sig wasm.FunctionSig, 
 	return printf(w, "\treturn &%s{m: m, f: f}\n}\n\n", name)
 }
 
-func emitCallFunction(w io.Writer, sig wasm.FunctionSig, name string) error {
+func emitCallFunction(w io.Writer, sig wasm.FunctionSig, name string, noInternalThreads bool) error {
 	if err := printf(w, "func (f *%s) Call(t *exec.Thread, a ...interface{}) (r []interface{}) {\n\t", name); err != nil {
 		return err
 	}
@@ -1367,6 +1411,11 @@ func emitCallFunction(w io.Writer, sig wasm.FunctionSig, name string) error {
 	}
 	if err := printf(w, "\t"); err != nil {
 		return err
+	}
+
+	threadArg := ", t"
+	if noInternalThreads {
+		threadArg = ""
 	}
 
 	if len(sig.ReturnTypes) > 0 {
@@ -1382,7 +1431,7 @@ func emitCallFunction(w io.Writer, sig wasm.FunctionSig, name string) error {
 			return err
 		}
 	}
-	if err := printf(w, "f.f(f.m, t"); err != nil {
+	if err := printf(w, "f.f(f.m%s", threadArg); err != nil {
 		return err
 	}
 	for i, t := range sig.ParamTypes {
@@ -1406,7 +1455,12 @@ func emitCallFunction(w io.Writer, sig wasm.FunctionSig, name string) error {
 	return printf(w, ")\n\treturn\n}\n\n")
 }
 
-func emitUncheckedCallFunction(w io.Writer, sig wasm.FunctionSig, name string) error {
+func emitUncheckedCallFunction(w io.Writer, sig wasm.FunctionSig, name string, noInternalThreads bool) error {
+	threadArg := ", t"
+	if noInternalThreads {
+		threadArg = ""
+	}
+
 	if err := printf(w, "func (f *%s) UncheckedCall(t *exec.Thread, a, r []uint64) {\n", name); err != nil {
 		return err
 	}
@@ -1426,7 +1480,7 @@ func emitUncheckedCallFunction(w io.Writer, sig wasm.FunctionSig, name string) e
 			return err
 		}
 	}
-	if err := printf(w, "f.f(f.m, t"); err != nil {
+	if err := printf(w, "f.f(f.m%s", threadArg); err != nil {
 		return err
 	}
 	for i, t := range sig.ParamTypes {

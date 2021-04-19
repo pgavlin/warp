@@ -249,7 +249,7 @@ func compileModuleCommand(test io.Writer, dir string, command wast.ModuleCommand
 	}
 	defer f.Close()
 
-	if err = CompileModule(f, "test", name, m); err != nil {
+	if err = CompileModule(f, "test", name, m, nil); err != nil {
 		return "", fmt.Errorf("%v: %w", path, err)
 	}
 
