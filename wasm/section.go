@@ -823,7 +823,9 @@ func (*SectionCode) SectionID() SectionID {
 }
 
 func (s *SectionCode) ReadPayload(r io.Reader) error {
-	count, err := leb128.ReadVarUint32(r)
+	reader := readpos.ReadPos{R: r}
+
+	count, err := leb128.ReadVarUint32(&reader)
 	if err != nil {
 		return err
 	}
@@ -831,11 +833,13 @@ func (s *SectionCode) ReadPayload(r io.Reader) error {
 	logger.Printf("%d function bodies\n", count)
 
 	for i := uint32(0); i < count; i++ {
+		offset := reader.CurPos
 		logger.Printf("Reading function %d\n", i)
 		var body FunctionBody
-		if err = body.UnmarshalWASM(r); err != nil {
+		if err = body.UnmarshalWASM(&reader); err != nil {
 			return err
 		}
+		body.Offset = offset
 		s.Bodies = append(s.Bodies, body)
 	}
 	return nil
@@ -856,6 +860,7 @@ func (s *SectionCode) WritePayload(w io.Writer) error {
 var ErrFunctionNoEnd = errors.New("Function body does not end with 0x0b (end)")
 
 type FunctionBody struct {
+	Offset int64   // The offset of the first byte of this function body relative to the start of the code section.
 	Module *Module // The parent module containing this function body, for execution purposes
 	Locals []LocalEntry
 	Code   []byte
