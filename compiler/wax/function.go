@@ -80,7 +80,7 @@ func ImportFunction(typeIndex uint32, signature wasm.FunctionSig, body wasm.Func
 
 	// Compile the function body into expression trees.
 	for ip, instr := range decoded.Instructions {
-		f.importInstruction(ip, instr, s)
+		f.ImportInstruction(ip, instr, s)
 	}
 
 	return f
@@ -104,12 +104,6 @@ func NewFunction(typeIndex uint32, signature wasm.FunctionSig, body wasm.Functio
 	f.ImportInstruction(-1, code.Block(uint64(typeIndex)), f.Scope(scope))
 
 	return f
-}
-
-func (f *Function) ImportInstruction(ip int, instr code.Instruction, scope *FunctionScope) []*Def {
-	b := len(f.Body)
-	f.importInstruction(ip, instr, scope)
-	return f.Body[b:]
 }
 
 func (f *Function) LabelTypes(idx int) []wasm.ValueType {
@@ -137,7 +131,7 @@ func (f *Function) DropStack(until int) {
 	f.Stack = f.Stack[:until]
 }
 
-func (f *Function) importInstruction(ip int, instr code.Instruction, scope *FunctionScope) {
+func (f *Function) ImportInstruction(ip int, instr code.Instruction, scope *FunctionScope) {
 	type VT = wasm.ValueType
 
 	const (
@@ -243,8 +237,8 @@ func (f *Function) importInstruction(ip int, instr code.Instruction, scope *Func
 		isOrdered, flags = true, FlagsStoreLocal
 	case code.OpLocalTee:
 		// Decompose tee into a set followed by a get to avoid extra temps and allow for code motion.
-		f.importInstruction(ip, code.LocalSet(instr.Localidx()), scope)
-		f.importInstruction(ip, code.LocalGet(instr.Localidx()), scope)
+		f.ImportInstruction(ip, code.LocalSet(instr.Localidx()), scope)
+		f.ImportInstruction(ip, code.LocalGet(instr.Localidx()), scope)
 		return
 
 	case code.OpGlobalGet:

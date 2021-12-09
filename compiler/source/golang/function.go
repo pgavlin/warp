@@ -103,16 +103,17 @@ func (f *functionCompiler) compile(m *moduleCompiler, index int, typeIndex uint3
 
 	// Compile the function body into expression trees.
 	for ip, instr := range codeBody.Instructions {
-		defs := f.ImportInstruction(ip, instr, s)
-		for _, d := range defs {
-			markUntypedExpressions(d.Expression)
-		}
+		f.ImportInstruction(ip, instr, s)
 	}
 	if len(f.Stack) > 0 {
 		f.ImportInstruction(0, code.Return(), s)
 	} else if !m.noInternalThreads {
 		// We need a terminal return for Leave().
 		f.Body = append(f.Body, &wax.Def{Expression: &wax.Expression{Function: &f.Function, Instr: code.Return()}})
+	}
+
+	for _, d := range f.Body {
+		markUntypedExpressions(d.Expression)
 	}
 }
 
