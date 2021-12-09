@@ -98,6 +98,10 @@ func TestFibRecursive(t *testing.T) {
 	testModule(t, FibRecursive, "app_main", 9227465)
 }
 
+func TestSpillLiveAcross(t *testing.T) {
+	testModule(t, SpillLiveAcross, "main", 42)
+}
+
 func expr(instrs ...code.Instruction) []byte {
 	var buf bytes.Buffer
 	if err := code.Encode(&buf, instrs); err != nil {
@@ -227,6 +231,51 @@ var FibRecursive = &wasm.Module{
 				Code: expr(
 					code.I32Const(35),
 					code.Call(0), // fib
+					code.End(),
+				),
+			},
+		},
+	},
+}
+
+var SpillLiveAcross = &wasm.Module{
+	Version: 1,
+
+	Types: &wasm.SectionTypes{
+		Entries: []wasm.FunctionSig{
+			{Form: 0x60, ParamTypes: []wasm.ValueType{wasm.ValueTypeI32}, ReturnTypes: []wasm.ValueType{wasm.ValueTypeI32}},
+			{Form: 0x60, ParamTypes: []wasm.ValueType{}, ReturnTypes: []wasm.ValueType{wasm.ValueTypeI32}},
+		},
+	},
+	Function: &wasm.SectionFunctions{
+		Types: []uint32{0, 1},
+	},
+	Export: &wasm.SectionExports{
+		Entries: []wasm.ExportEntry{
+			{FieldStr: "main", Kind: wasm.ExternalFunction, Index: 1},
+		},
+	},
+	Code: &wasm.SectionCode{
+		Bodies: []wasm.FunctionBody{
+			{
+				Locals: []wasm.LocalEntry{
+					{Count: 1, Type: wasm.ValueTypeI32},
+				},
+				Code: expr(
+					code.I32Const(42),
+					code.LocalTee(1),
+					code.LocalGet(0),
+					code.If(code.BlockTypeEmpty),
+					code.I32Const(0),
+					code.LocalSet(1),
+					code.End(),
+					code.End(),
+				),
+			},
+			{
+				Code: expr(
+					code.I32Const(0),
+					code.Call(0),
 					code.End(),
 				),
 			},
