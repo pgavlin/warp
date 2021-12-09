@@ -105,9 +105,15 @@ func (f *functionCompiler) compile(m *moduleCompiler, index int, typeIndex uint3
 	for ip, instr := range codeBody.Instructions {
 		f.ImportInstruction(ip, instr, s)
 	}
+
+	hasReturn := false
 	if len(f.Stack) > 0 {
 		f.ImportInstruction(0, code.Return(), s)
-	} else if !m.noInternalThreads {
+		hasReturn = true
+	}
+	f.FinishImport()
+
+	if !hasReturn && m.noInternalThreads {
 		// We need a terminal return for Leave().
 		f.Body = append(f.Body, &wax.Def{Expression: &wax.Expression{Function: &f.Function, Instr: code.Return()}})
 	}

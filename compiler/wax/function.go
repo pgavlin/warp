@@ -51,6 +51,8 @@ type Function struct {
 	Labels int
 
 	Body []*Def
+
+	basicBlocks []*basicBlock // only used for spill placement during import
 }
 
 type FunctionScope struct {
@@ -100,10 +102,23 @@ func NewFunction(typeIndex uint32, signature wasm.FunctionSig, body wasm.Functio
 	}
 	f.UsedLocals = make([]bool, len(f.Locals))
 
+	// Push the initial basic block.
+	f.basicBlocks = append(f.basicBlocks, &basicBlock{})
+
 	// Push the initial block.
 	f.ImportInstruction(-1, code.Block(uint64(typeIndex)), f.Scope(scope))
 
 	return f
+}
+
+func (f *Function) FinishImport() []*Def {
+	// the terminal basic block must be empty.
+	for _, bb := range f.basicBlocks[:len(f.basicBlocks)-1] {
+		f.Body = append(f.Body, bb.body...)
+		f.Body = append(f.Body, bb.terminator)
+	}
+	f.basicBlocks = nil
+	return f.Body
 }
 
 func (f *Function) LabelTypes(idx int) []wasm.ValueType {
@@ -119,8 +134,9 @@ func (f *Function) Unreachable() bool {
 }
 
 func (f *Function) DropStack(until int) {
+	bb := f.basicBlocks[len(f.basicBlocks)-1]
 	for _, u := range f.Stack[until:] {
-		f.Body = append(f.Body, &Def{
+		bb.body = append(bb.body, &Def{
 			Expression: &Expression{
 				Function: f,
 				Instr:    code.Drop(),
@@ -147,7 +163,7 @@ func (f *Function) ImportInstruction(ip int, instr code.Instruction, scope *Func
 	isOrdered, isBlock, isBranch, isElse, isEnd, isSelect, isUnreachable := false, false, false, false, false, false, false
 	flags := Flags(0)
 	usedLocals, storedLocals := bitset.BitSet{}, bitset.BitSet{}
-	x := &Expression{Function: f, IP: ip, Instr: instr}
+	x := &Expression{Function: f, IP: ip, Instr: instr, basicBlock: f.basicBlocks[len(f.basicBlocks)-1]}
 
 	switch instr.Opcode {
 	case code.OpUnreachable:
@@ -544,7 +560,7 @@ func (f *Function) ImportInstruction(ip int, instr code.Instruction, scope *Func
 						Types:      []wasm.ValueType{u.Type},
 					}
 					d.Temp, f.Temps = len(f.Locals)+f.Temps, f.Temps+1
-					f.Body = append(f.Body, d)
+					u.X.basicBlock.body = append(u.X.basicBlock.body, d)
 
 					u.X, u.Temp = nil, d.Temp
 				}
@@ -555,7 +571,14 @@ func (f *Function) ImportInstruction(ip int, instr code.Instruction, scope *Func
 		if len(stackDefs) != 0 && !isElse && !isEnd {
 			d.Temp, f.Temps = len(f.Locals)+f.Temps, f.Temps+len(stackDefs)
 		}
-		f.Body = append(f.Body, d)
+
+		// if this instruction terminates a basic block, update the block's terminator and push a new block
+		if isBlock || isElse || isEnd || isBranch || x.Instr.Opcode == code.OpReturn {
+			x.basicBlock.terminator = d
+			f.basicBlocks = append(f.basicBlocks, &basicBlock{})
+		} else {
+			x.basicBlock.body = append(x.basicBlock.body, d)
+		}
 	}
 
 	// Update blocks and branch targets.
@@ -609,7 +632,7 @@ func (f *Function) ImportInstruction(ip int, instr code.Instruction, scope *Func
 		if d == nil {
 			d = &Def{Expression: x, Types: stackDefs}
 			d.Temp, f.Temps = len(f.Locals)+f.Temps, f.Temps+len(stackDefs)
-			f.Body = append(f.Body, d)
+			x.basicBlock.body = append(x.basicBlock.body, d)
 		}
 		for i, t := range stackDefs {
 			f.Stack = append(f.Stack, &Use{Function: f, Type: t, Temp: d.Temp + i})

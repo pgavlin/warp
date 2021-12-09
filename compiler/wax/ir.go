@@ -39,6 +39,8 @@ type Expression struct {
 	Instr code.Instruction
 	Uses  Uses
 	Flags Flags
+
+	basicBlock *basicBlock
 }
 
 const (
@@ -185,4 +187,9 @@ type Formatter interface {
 	FormatUse(f fmt.State, verb rune, u *Use)
 	FormatUses(f fmt.State, verb rune, us Uses)
 	FormatDef(f fmt.State, verb rune, d *Def)
+}
+
+type basicBlock struct {
+	body       []*Def
+	terminator *Def
 }
