@@ -549,6 +549,16 @@ func allocate{{.ExportedName}}(name string) (exec.AllocatedModule, error) {
 	{{if .ExportTable0 -}}
 	m.exports[{{printf "%q" .ExportTable0.FieldStr}}] = m.table0
 	{{- end}}
+	{{range .ExportedGlobals -}}
+	{{if not .Imported -}}
+	m.exports[{{printf "%q" .FieldStr}}] = &m.g{{.Index}}
+	{{- end}}
+	{{end -}}
+	{{range .ExportedFunctions -}}
+	{{if not .Imported -}}
+	m.exports[{{printf "%q" .FieldStr}}] = new{{.TypeName}}(m, {{.Name}})
+	{{- end}}
+	{{end -}}
 	{{- end}}
 
 	return &allocated{{.ExportedName}}{
@@ -601,13 +611,13 @@ func (m *allocated{{.ExportedName}}) Instantiate(imports exec.ImportResolver) (e
 	m.exports[{{printf "%q" .ExportTable0.FieldStr}}] = m.table0
 	{{- end}}
 	{{range .ExportedGlobals -}}
-	m.exports[{{printf "%q" .FieldStr}}] = {{if not .Imported}}&{{end}}m.g{{.Index}}
+	{{if .Imported}}
+	m.exports[{{printf "%q" .FieldStr}}] = m.g{{.Index}}
+	{{- end}}
 	{{end -}}
 	{{range .ExportedFunctions -}}
 	{{if .Imported -}}
 	m.exports[{{printf "%q" .FieldStr}}] = m.importedFunctions[{{.Index}}]
-	{{- else -}}
-	m.exports[{{printf "%q" .FieldStr}}] = new{{.TypeName}}(m.{{$moduleName}}Instance, {{.Name}})
 	{{- end}}
 	{{end -}}
 	{{- end}}

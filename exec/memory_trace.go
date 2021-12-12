@@ -73,8 +73,23 @@ func (m *Memory) Byte(base, offset uint32) byte {
 	return v
 }
 
+// Uint8 returns the byte stored at the given offset.
+func (m *Memory) Uint8(base, offset uint32) byte {
+	addr := effectiveAddress(base, offset)
+	v := m.bytes[addr]
+	fmt.Fprintf(os.Stderr, "0x%08x -> 0x%02x\n", addr, v)
+	return v
+}
+
 // PutByte writes the given byte to the given offset.
 func (m *Memory) PutByte(v byte, base, offset uint32) {
+	addr := effectiveAddress(base, offset)
+	fmt.Fprintf(os.Stderr, "0x%08x <- 0x%02x\n", addr, v)
+	m.bytes[addr] = v
+}
+
+// PutUint8 writes the given byte to the given offset.
+func (m *Memory) PutUint8(v byte, base, offset uint32) {
 	addr := effectiveAddress(base, offset)
 	fmt.Fprintf(os.Stderr, "0x%08x <- 0x%02x\n", addr, v)
 	m.bytes[addr] = v
@@ -150,9 +165,19 @@ func (m *Memory) ByteAt(offset uint32) byte {
 	return m.Byte(offset, 0)
 }
 
+// Uint8At returns the byte stored at the given offset.
+func (m *Memory) Uint8At(offset uint32) byte {
+	return m.Uint8(offset, 0)
+}
+
 // PutByte writes the given byte to the given offset.
 func (m *Memory) PutByteAt(v byte, offset uint32) {
 	m.PutByte(v, offset, 0)
+}
+
+// PutUint8 writes the given byte to the given offset.
+func (m *Memory) PutUint8At(v byte, offset uint32) {
+	m.PutUint8(v, offset, 0)
 }
 
 // Uint16 returns the uint16 stored at the given offset.

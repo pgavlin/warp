@@ -1033,6 +1033,15 @@ const (
 	NameModule   = NameType(0)
 	NameFunction = NameType(1)
 	NameLocal    = NameType(2)
+
+	// Extended name subsections from https://github.com/WebAssembly/extended-name-section/blob/main/proposals/extended-name-section/Overview.md
+	NameLabels      = NameType(3)
+	NameTypes       = NameType(4)
+	NameTable       = NameType(5)
+	NameMemory      = NameType(6)
+	NameGlobal      = NameType(7)
+	NameElemSegment = NameType(8)
+	NameDataSegment = NameType(9)
 )
 
 type NameSubsection interface {
@@ -1136,6 +1145,167 @@ func (s *LocalNamesSubsection) MarshalWASM(w io.Writer) error {
 	return nil
 }
 
+type LabelNames struct {
+	Index uint32
+	Names []Naming
+}
+
+type LabelsNamesSubsection struct {
+	Funcs []LabelNames
+}
+
+func (s *LabelsNamesSubsection) Type() NameType {
+	return NameLabels
+}
+
+func (s *LabelsNamesSubsection) UnmarshalWASM(r io.Reader) error {
+	size, err := leb128.ReadVarUint32(r)
+	if err != nil {
+		return err
+	}
+
+	funcs := make([]LabelNames, int(size))
+	for i := range funcs {
+		ind, err := leb128.ReadVarUint32(r)
+		if err != nil {
+			return err
+		}
+
+		names, err := readNameMap(r)
+		if err != nil {
+			return err
+		}
+		funcs[i] = LabelNames{Index: ind, Names: names}
+	}
+	s.Funcs = funcs
+
+	return nil
+}
+
+func (s *LabelsNamesSubsection) MarshalWASM(w io.Writer) error {
+	if _, err := leb128.WriteVarUint32(w, uint32(len(s.Funcs))); err != nil {
+		return err
+	}
+
+	for _, func_ := range s.Funcs {
+		if _, err := leb128.WriteVarUint32(w, func_.Index); err != nil {
+			return err
+		}
+		if err := writeNameMap(w, func_.Names); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type TypeNamesSubsection struct {
+	Names []Naming
+}
+
+func (s *TypeNamesSubsection) Type() NameType {
+	return NameTypes
+}
+
+func (s *TypeNamesSubsection) UnmarshalWASM(r io.Reader) error {
+	var err error
+	s.Names, err = readNameMap(r)
+	return err
+}
+
+func (s *TypeNamesSubsection) MarshalWASM(w io.Writer) error {
+	return writeNameMap(w, s.Names)
+}
+
+type TableNamesSubsection struct {
+	Names []Naming
+}
+
+func (s *TableNamesSubsection) Type() NameType {
+	return NameTable
+}
+
+func (s *TableNamesSubsection) UnmarshalWASM(r io.Reader) error {
+	var err error
+	s.Names, err = readNameMap(r)
+	return err
+}
+
+func (s *TableNamesSubsection) MarshalWASM(w io.Writer) error {
+	return writeNameMap(w, s.Names)
+}
+
+type MemoryNamesSubsection struct {
+	Names []Naming
+}
+
+func (s *MemoryNamesSubsection) Type() NameType {
+	return NameMemory
+}
+
+func (s *MemoryNamesSubsection) UnmarshalWASM(r io.Reader) error {
+	var err error
+	s.Names, err = readNameMap(r)
+	return err
+}
+
+func (s *MemoryNamesSubsection) MarshalWASM(w io.Writer) error {
+	return writeNameMap(w, s.Names)
+}
+
+type GlobalNamesSubsection struct {
+	Names []Naming
+}
+
+func (s *GlobalNamesSubsection) Type() NameType {
+	return NameGlobal
+}
+
+func (s *GlobalNamesSubsection) UnmarshalWASM(r io.Reader) error {
+	var err error
+	s.Names, err = readNameMap(r)
+	return err
+}
+
+func (s *GlobalNamesSubsection) MarshalWASM(w io.Writer) error {
+	return writeNameMap(w, s.Names)
+}
+
+type ElemSegmentNamesSubsection struct {
+	Names []Naming
+}
+
+func (s *ElemSegmentNamesSubsection) Type() NameType {
+	return NameElemSegment
+}
+
+func (s *ElemSegmentNamesSubsection) UnmarshalWASM(r io.Reader) error {
+	var err error
+	s.Names, err = readNameMap(r)
+	return err
+}
+
+func (s *ElemSegmentNamesSubsection) MarshalWASM(w io.Writer) error {
+	return writeNameMap(w, s.Names)
+}
+
+type DataSegmentNamesSubsection struct {
+	Names []Naming
+}
+
+func (s *DataSegmentNamesSubsection) Type() NameType {
+	return NameDataSegment
+}
+
+func (s *DataSegmentNamesSubsection) UnmarshalWASM(r io.Reader) error {
+	var err error
+	s.Names, err = readNameMap(r)
+	return err
+}
+
+func (s *DataSegmentNamesSubsection) MarshalWASM(w io.Writer) error {
+	return writeNameMap(w, s.Names)
+}
+
 // NameSection is a custom section that stores names of modules, functions and locals for debugging purposes.
 // See https://github.com/WebAssembly/design/blob/master/BinaryEncoding.md#name-section for more details.
 type NameSection struct {
@@ -1166,6 +1336,21 @@ func (s *NameSection) UnmarshalWASM(r io.Reader) error {
 			sub = &FunctionNamesSubsection{}
 		case NameLocal:
 			sub = &LocalNamesSubsection{}
+		case NameLabels:
+			sub = &LabelsNamesSubsection{}
+		case NameTypes:
+			sub = &TypeNamesSubsection{}
+		case NameTable:
+			sub = &TableNamesSubsection{}
+		case NameMemory:
+			sub = &MemoryNamesSubsection{}
+		case NameGlobal:
+			sub = &GlobalNamesSubsection{}
+		case NameElemSegment:
+			sub = &ElemSegmentNamesSubsection{}
+		case NameDataSegment:
+			sub = &DataSegmentNamesSubsection{}
+
 		default:
 			return fmt.Errorf("unsupported name subsection: %x", typ)
 		}

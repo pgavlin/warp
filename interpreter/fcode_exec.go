@@ -1,6 +1,5 @@
-//go:build !memtrace && (js || plan9 || windows || armbe || arm64be || ppc || ppc64 || mips || mips64 || s390x)
-// +build js plan9 windows armbe arm64be ppc ppc64 mips mips64 s390x
-// +build !memtrace
+//go:build memtrace || js || plan9 || windows || armbe || arm64be || ppc || ppc64 || mips || mips64 || s390x
+// +build memtrace js plan9 windows armbe arm64be ppc ppc64 mips mips64 s390x
 
 package interpreter
 
