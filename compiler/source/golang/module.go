@@ -163,6 +163,8 @@ func CompileModule(w io.Writer, packageName, name string, module *wasm.Module, o
 		return err
 	}
 
+	name = identName(name)
+
 	compiler := moduleCompiler{
 		packageName:  packageName,
 		name:         unexportName(name),
