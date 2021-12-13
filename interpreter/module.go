@@ -8,7 +8,8 @@ import (
 
 // A module holds an instance of a WASM module.
 type module struct {
-	name string // The name of the module.
+	name     string // The name of the module.
+	codeKind int    // The code kind for the module. Used for testing purposes.
 
 	types     []wasm.FunctionSig // The types used by this module.
 	functions []function         // The function table for this module.

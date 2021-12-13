@@ -13,14 +13,25 @@ import (
 // not valid.
 var ErrInvalidMemoryIndex = fmt.Errorf("invalid memory index")
 
+const (
+	mixedCode = 0
+	icodeOnly = 1
+	fcodeOnly = 2
+)
+
 type moduleDefinition struct {
-	mod *wasm.Module
+	mod      *wasm.Module
+	codeKind int
 }
 
 // NewModuleDefinition creates a new ModuleDefinition from the given WASM module. The
 // module's functions will be executed by the intepreter.
 func NewModuleDefinition(module *wasm.Module) exec.ModuleDefinition {
-	return &moduleDefinition{mod: module}
+	return newModuleDefinition(module, mixedCode)
+}
+
+func newModuleDefinition(module *wasm.Module, codeKind int) exec.ModuleDefinition {
+	return &moduleDefinition{mod: module, codeKind: codeKind}
 }
 
 // LoadModuleDefinition decodes a WASM module from the given Reader and uses it to create
@@ -35,7 +46,7 @@ func LoadModuleDefinition(r io.Reader) (exec.ModuleDefinition, error) {
 
 func (def *moduleDefinition) Allocate(name string) (exec.AllocatedModule, error) {
 	module := allocatedModule{
-		module: &module{name: name},
+		module: &module{name: name, codeKind: def.codeKind},
 	}
 
 	// Allocate import entries.

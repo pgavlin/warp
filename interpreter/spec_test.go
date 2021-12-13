@@ -44,6 +44,16 @@ func TestSpec(t *testing.T) {
 			warp_testing.RunScript(t, func(m *wasm.Module) (exec.ModuleDefinition, error) {
 				return NewModuleDefinition(m), nil
 			}, filepath.Join(specDir, entry.Name()), false, ignore[entry.Name()])
+
+			// ICode only
+			warp_testing.RunScript(t, func(m *wasm.Module) (exec.ModuleDefinition, error) {
+				return newModuleDefinition(m, icodeOnly), nil
+			}, filepath.Join(specDir, entry.Name()), false, ignore[entry.Name()])
+
+			// FCode only
+			warp_testing.RunScript(t, func(m *wasm.Module) (exec.ModuleDefinition, error) {
+				return newModuleDefinition(m, fcodeOnly), nil
+			}, filepath.Join(specDir, entry.Name()), false, ignore[entry.Name()])
 		})
 	}
 }

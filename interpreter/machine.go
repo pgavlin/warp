@@ -184,6 +184,13 @@ func (m *machine) push(fn *function) *frame {
 		fn.icode, fn.metrics, fn.bytecode = body.Instructions, body.Metrics, nil
 
 		switch {
+		case fn.module.codeKind != 0:
+			if fn.module.codeKind == icodeOnly {
+				fn.kind = functionKindICode
+			} else {
+				m.emitFcode(fn, fn.icode)
+				fn.kind = functionKindFCode
+			}
 		case fn.metrics.HasLoops:
 			m.emitFcode(fn, fn.icode)
 			fn.kind = functionKindFCode
