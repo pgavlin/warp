@@ -185,11 +185,11 @@ func (m *machine) push(fn *function) *frame {
 
 		switch {
 		case fn.module.codeKind != 0:
-			if fn.module.codeKind == icodeOnly {
-				fn.kind = functionKindICode
-			} else {
+			if fn.module.codeKind == fcodeOnly {
 				m.emitFcode(fn, fn.icode)
 				fn.kind = functionKindFCode
+			} else {
+				fn.kind = functionKindICode
 			}
 		case fn.metrics.HasLoops:
 			m.emitFcode(fn, fn.icode)
@@ -251,7 +251,7 @@ func (f *frame) runDebug(fn *function) {
 		Locals:            f.locals,
 	})
 
-	if trace, tracing := f.m.thread.Trace(); tracing {
+	if trace, tracing := f.m.thread.Trace(); tracing || f.module.codeKind == icodeTrace {
 		f.runTrace(trace, fn)
 	} else {
 		f.runICode(fn)

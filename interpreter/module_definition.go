@@ -14,9 +14,10 @@ import (
 var ErrInvalidMemoryIndex = fmt.Errorf("invalid memory index")
 
 const (
-	mixedCode = 0
-	icodeOnly = 1
-	fcodeOnly = 2
+	mixedCode  = 0
+	icodeOnly  = 1
+	fcodeOnly  = 2
+	icodeTrace = 3
 )
 
 type moduleDefinition struct {

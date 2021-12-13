@@ -50,6 +50,11 @@ func TestSpec(t *testing.T) {
 				return newModuleDefinition(m, icodeOnly), nil
 			}, filepath.Join(specDir, entry.Name()), false, ignore[entry.Name()])
 
+			// Tracing ICode only
+			warp_testing.RunScript(t, func(m *wasm.Module) (exec.ModuleDefinition, error) {
+				return newModuleDefinition(m, icodeTrace), nil
+			}, filepath.Join(specDir, entry.Name()), false, ignore[entry.Name()])
+
 			// FCode only
 			warp_testing.RunScript(t, func(m *wasm.Module) (exec.ModuleDefinition, error) {
 				return newModuleDefinition(m, fcodeOnly), nil
