@@ -14,6 +14,7 @@ import (
 )
 
 var specTest = flag.String("spec", "", "spec test to run")
+var codeKindF = flag.String("code", "", "code kind to run")
 
 func TestMain(m *testing.M) {
 	flag.Parse()
@@ -23,7 +24,16 @@ func TestMain(m *testing.M) {
 func TestSpec(t *testing.T) {
 	if *specTest != "" {
 		warp_testing.RunScript(t, func(m *wasm.Module) (exec.ModuleDefinition, error) {
-			return NewModuleDefinition(m), nil
+			codeKind := mixedCode
+			switch *codeKindF {
+			case "icodeOnly":
+				codeKind = icodeOnly
+			case "icodeTrace":
+				codeKind = icodeTrace
+			case "fcodeOnly":
+				codeKind = fcodeOnly
+			}
+			return newModuleDefinition(m, codeKind), nil
 		}, *specTest, false, ignore[filepath.Base(*specTest)])
 		return
 	}

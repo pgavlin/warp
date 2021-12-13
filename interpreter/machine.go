@@ -251,8 +251,10 @@ func (f *frame) runDebug(fn *function) {
 		Locals:            f.locals,
 	})
 
-	if trace, tracing := f.m.thread.Trace(); tracing || f.module.codeKind == icodeTrace {
+	if trace, tracing := f.m.thread.Trace(); tracing {
 		f.runTrace(trace, fn)
+	} else if f.module.codeKind == icodeTrace {
+		f.runTraceTest(fn)
 	} else {
 		f.runICode(fn)
 	}
@@ -300,6 +302,21 @@ func (f *frame) runTrace(w io.Writer, fn *function) {
 	}
 }
 
+func (f *frame) runTraceTest(fn *function) {
+	// Push the first label.
+	f.blocks = f.blocks[:2]
+	f.blocks[0] = uint64(len(fn.icode) - 1)
+	f.blocks[1] = uint64(len(fn.signature.ReturnTypes))
+
+	ip := 0
+	for {
+		ip = f.step(fn.icode, ip)
+		if ip == len(fn.icode) {
+			return
+		}
+	}
+}
+
 func (f *frame) invoke(fn exec.Function) {
 	if fn, ok := fn.(*function); ok {
 		f.invokeDirect(fn)
@@ -328,7 +345,7 @@ func (f *frame) invoke(fn exec.Function) {
 func (f *frame) invokeDirect(fn *function) {
 	callee := f.m.push(fn)
 
-	if f.m.thread.Debug() {
+	if f.m.thread.Debug() || fn.module.codeKind == icodeTrace {
 		callee.runDebug(fn)
 	} else {
 		callee.m.thread.Enter()

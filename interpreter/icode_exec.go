@@ -235,6 +235,9 @@ func (f *frame) step(body []code.Instruction, ip int) int {
 		f.popContinuation()
 		return instr.Continuation()
 	case code.OpEnd:
+		if ip == len(body)-1 {
+			return len(body)
+		}
 		f.popContinuation()
 
 	case code.OpBr:
@@ -251,6 +254,7 @@ func (f *frame) step(body []code.Instruction, ip int) int {
 
 	case code.OpReturn:
 		// Check will happen in caller
+		return len(body)
 
 	case code.OpCall:
 		funcidx := instr.Funcidx()
@@ -268,6 +272,9 @@ func (f *frame) step(body []code.Instruction, ip int) int {
 		}
 
 		function := table[int(tableidx)]
+		if function == nil {
+			f.trap(exec.TrapUninitializedElement)
+		}
 
 		expectedSig := f.module.types[int(instr.Typeidx())]
 		actualSig := function.GetSignature()
