@@ -295,8 +295,8 @@ func (m *wasmExec) GetFunction(name string) (exec.Function, error) {
 		return exec.NewHostFunction(m, 2, reflect.ValueOf(m.resetMemoryDataView)), nil
 	case "runtime.nanotime1":
 		return exec.NewHostFunction(m, 3, reflect.ValueOf(m.nanotime1)), nil
-	case "runtime.walltime1":
-		return exec.NewHostFunction(m, 4, reflect.ValueOf(m.walltime1)), nil
+	case "runtime.walltime1", "runtime.walltime":
+		return exec.NewHostFunction(m, 4, reflect.ValueOf(m.walltime)), nil
 	case "runtime.scheduleTimeoutEvent":
 		return exec.NewHostFunction(m, 5, reflect.ValueOf(m.scheduleTimeoutEvent)), nil
 	case "runtime.clearTimeoutEvent":
@@ -465,8 +465,8 @@ func (m *wasmExec) nanotime1(sp uint32) {
 	m.mem.PutUint64(uint64(t), sp, 8)
 }
 
-// func walltime1() (sec int64, nsec int32)
-func (m *wasmExec) walltime1(sp uint32) {
+// func walltime() (sec int64, nsec int32)
+func (m *wasmExec) walltime(sp uint32) {
 	t := time.Now()
 	m.mem.PutUint64(uint64(int64(t.Second())), sp, 8)
 	m.mem.PutUint32(uint32(int32(t.Nanosecond())), sp, 16)

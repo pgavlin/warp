@@ -44,7 +44,7 @@ func (v Value) IsNaN() bool {
 }
 
 func (v Value) Object() (Object, bool) {
-	if !v.v.CanInterface() {
+	if !v.v.IsValid() || !v.v.CanInterface() {
 		return nil, false
 	}
 	o, ok := v.v.Interface().(Object)
@@ -74,7 +74,7 @@ func (v Value) Uint8Array() ([]byte, bool) {
 }
 
 func (v Value) Function() (Function, bool) {
-	if !v.v.CanInterface() {
+	if !v.v.IsValid() || !v.v.CanInterface() {
 		return nil, false
 	}
 	f, ok := v.v.Interface().(Function)
